@@ -6,16 +6,33 @@ const MainHome = ({ setView }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // 🗄️ Graphical Rack එක සඳහා Sample Data
-  const [selectedRack, setSelectedRack] = useState('Rack 01');
-  const shelves = ['Shelf 04', 'Shelf 03', 'Shelf 02', 'Shelf 01'];
-  const columns = [1, 2, 3, 4, 5, 6, 7, 8];
+ // ඔබේ component එකේ උඩින්ම මේ දත්ත ටික තබා ගන්න
+// ඔබේ component එකේ උඩින්ම (useState තියෙන තැන)
+const [selectedRack, setSelectedRack] = useState('Rack 01');
 
-  const rackData = {
-    'Shelf 04': [1, 0, 1, 1, 0, 1, 0, 0], 
-    'Shelf 03': [1, 1, 0, 1, 1, 0, 1, 1],
-    'Shelf 02': [0, 0, 1, 0, 1, 1, 0, 1],
-    'Shelf 01': [1, 1, 1, 1, 0, 0, 1, 1]
-  };
+// රාක්ක වර්ග 3කටම දත්ත අඩංගු වන පරිදි මෙය වෙනස් කරන්න
+const [rackData, setRackData] = useState({
+  'Rack 01': {
+    'shelf 04': [1, 0, 1, 1, 0, 1, 0, 0],
+    'shelf 03': [1, 1, 0, 1, 1, 0, 1, 1],
+    'shelf 02': [0, 0, 1, 0, 1, 1, 0, 1],
+    'shelf 01': [1, 1, 1, 1, 0, 0, 1, 1]
+  },
+  'Rack 02': {
+    'shelf 04': [0, 1, 0, 0, 1, 0, 1, 0],
+    'shelf 03': [0, 0, 0, 1, 0, 1, 0, 0],
+    'shelf 02': [1, 1, 0, 1, 1, 1, 0, 1],
+    'shelf 01': [0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  'Rack 03': {
+    'shelf 04': [1, 1, 1, 1, 1, 1, 1, 1],
+    'shelf 03': [0, 0, 0, 0, 0, 0, 0, 0],
+    'shelf 02': [1, 0, 1, 0, 1, 0, 1, 0],
+    'shelf 01': [0, 1, 0, 1, 0, 1, 0, 1]
+  }
+});
+const shelves = ['shelf 04', 'shelf 03', 'shelf 02', 'shelf 01'];
+const columns = [1, 2, 3, 4, 5, 6, 7, 8];
 
   useEffect(() => {
   const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -30,21 +47,49 @@ const MainHome = ({ setView }) => {
   }
 
   // 🎯 සියලුම වෙලාවන් සඳහා රජයේ වෙබ් අඩවියකට ගැලපෙන නිශ්චිත Professional තද පසුබිමක් ස්ථාවරව තබා ගැනීම
-  setBgStyle('linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)');
+  setBgStyle("url('/image/e1.jpg.jpg')");
 
   return () => clearInterval(timer);
 }, [currentTime]);
 
+  useEffect(() => {
+    const fetchRackData = async () => {
+        try {
+            // ඔබේ Backend එකේ port එක (උදා: 5000) නිවැරදිදැයි බලන්න
+            const response = await fetch(`http://localhost:5000/api/racks/${selectedRack}`);
+            const data = await response.json();
+            
+            // ලැබුණු දත්ත වලින් rackData එක Update කරන්න
+            setRackData(prev => ({
+                ...prev,
+                [selectedRack]: data
+            }));
+        } catch (err) {
+            console.error("API Error:", err);
+        }
+    };
+    fetchRackData();
+}, [selectedRack]); // selectedRack වෙනස් වන සෑම විටම API එක Call වේ
+
   return (
     <div style={{ ...styles.container, backgroundImage: bgStyle }}>
+
+      <div style={{
+  position: 'fixed',
+  top: 0, left: 0, width: '100%', height: '100%',
+  backgroundImage: "url('/image/e1.jpg')",
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  zIndex: -10 // Force it to the back
+}}></div>
       
       {/* 1. 🛡️ NEW MODERN NAVBAR WITH LOGO */}
       <nav style={styles.navbar}>
         <div style={styles.logoSection}>
           {/* 💡 ඔයාගේ ලෝගෝ ඉමේජ් එක පහත src එකට දාන්න */}
-          <img src="https://cdn-icons-png.flaticon.com/512/12517/12517006.png" alt="NWPC Logo" style={styles.logoImg} />
+          <img src="image\Nwp_sri_lanka.jpg"  style={styles.logoImg} />
           <div style={styles.logoText}>
-            NWPC <span style={styles.logoHighlight}>STORES</span>
+            NWPC <span style={styles.logoHighlight}>STORES MANAGEMENT SYSTEM</span>
           </div>
         </div>
         
@@ -67,7 +112,7 @@ const MainHome = ({ setView }) => {
       <div id="home" style={styles.heroSection}>
         <div style={styles.heroLeft}>
           <div style={styles.timeGreetingBadge}>{greeting}</div>
-          <h1 style={styles.mainTitle}>ලිපිගොනු කළමනාකරණ<br /><span style={{color: '#10b981'}}>මධ්‍යම පද්ධතිය</span></h1>
+          <h1 style={styles.mainTitle}>ලිපිගොනු කළමනාකරණ<br /><span style={{color: '#000000f5'}}>මධ්‍යම පද්ධතිය</span></h1>
           <p style={styles.subTitle}>වයඹ පළාත් සභා ගබඩා පරිශ්‍රය - North Western Provincial Council. ආයතනික ලිපිගොනු සුරක්ෂිතව සහ ක්‍රමවත්ව ඩිජිටල්කරණය කිරීමේ නිල අවකාශය.</p>
           <div style={{display:'flex', gap:'15px'}}>
             <a href="#rack-preview" style={styles.heroBtnPrimary}>View Live Racks</a>
@@ -115,42 +160,42 @@ const MainHome = ({ setView }) => {
             <p style={styles.rackSubtitle}>ගබඩාව තුළ භෞතික රාක්ක වල ලිපිගොනු පිරිලා ඇති ආකාරය (සජීවී දර්ශනය)</p>
           </div>
           <select style={styles.dropdown} value={selectedRack} onChange={(e) => setSelectedRack(e.target.value)}>
-            <option>Rack 01 (General Files)</option>
-            <option>Rack 02 (Account Files)</option>
-            <option>Rack 03 (Legal Documents)</option>
-          </select>
+  <option value="Rack 01">Rack 01 (General Files)</option>
+  <option value="Rack 02">Rack 02 (Account Files)</option>
+  <option value="Rack 03">Rack 03 (Legal Documents)</option>
+</select>
         </div>
 
         <div style={styles.legendContainer}>
-          <div style={styles.legendItem}><div style={{ ...styles.legendBox, background: '#2ecc71' }}></div> පිරිලා (File Available)</div>
-          <div style={styles.legendItem}><div style={{ ...styles.legendBox, background: 'rgba(255,255,255,0.1)' }}></div> හිස් ඉඩක් (Empty Slot)</div>
-        </div>
+  <div style={styles.legendItem}>
+    <div style={{ ...styles.legendBox, background: '#2ecc71' }}></div> 
+    <span>පිරිලා (File Available)</span>
+  </div>
+  
+  <div style={styles.legendItem}>
+    <div style={{ ...styles.legendBox, background: 'rgba(255, 255, 255, 0.1)' }}></div> 
+    <span>හිස් ඉඩක් (Empty Slot)</span>
+  </div>
+</div>
 
         <div style={styles.rackGrid}>
-          {shelves.map((shelf) => (
-            <div key={shelf} style={styles.shelfRow}>
-              <div style={styles.shelfLabel}>{shelf}</div>
-              <div style={styles.slotsContainer}>
-                {columns.map((col, index) => {
-                  const isOccupied = rackData[shelf][index] === 1;
-                  return (
-                    <div 
-                      key={col} 
-                      style={{ 
-                        ...styles.slotBox, 
-                        background: isOccupied ? '#2ecc71' : 'rgba(255, 255, 255, 0.05)',
-                        border: isOccupied ? '1px solid #27ae60' : '1px solid rgba(255,255,255,0.1)',
-                        boxShadow: isOccupied ? '0 0 15px rgba(46, 204, 113, 0.2)' : 'none'
-                      }}
-                      title={isOccupied ? "File is inside this slot" : "Empty Slot"}
-                    >
-                      {isOccupied && <div style={styles.fileLine}></div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+         {shelves.map((shelf) => (
+  <div key={shelf} style={styles.shelfRow}>
+    <div style={styles.shelfLabel}>{shelf}</div>
+    <div style={styles.slotsContainer}>
+      {/* මෙතැනදී rackData තිබේදැයි බලන්න */}
+      {(rackData[selectedRack]?.[shelf] || Array(8).fill(0)).map((col, index) => {
+        const isOccupied = (rackData[selectedRack]?.[shelf]?.[index]) === 1;
+        
+        return (
+          <div key={index} style={{ ...styles.slotBox, background: isOccupied ? '#2ecc71' : 'rgba(255, 255, 255, 0.05)' }}>
+            {isOccupied && <div style={styles.fileLine}></div>}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+))}
         </div>
         <p style={styles.infoFooter}>⚠️ සටහන: ලිපිගොනු වල නම සහ රහස්‍ය තොරතුරු බැලීම සඳහා කරුණාකර පද්ධතියට ලොග් වන්න.</p>
       </div>
@@ -175,17 +220,17 @@ const MainHome = ({ setView }) => {
           <div style={styles.contactCard}>
             <span style={{fontSize:'24px'}}>🏢</span>
             <h4>NWPC IT Division</h4>
-            <p style={{color:'#94a3b8', fontSize:'14px', marginTop:'5px'}}>Provincial Council Complex, Kurunegala</p>
+            <p style={{color:'#000000', fontSize:'14px', marginTop:'5px'}}>Provincial Council Complex, Kurunegala</p>
           </div>
           <div style={styles.contactCard}>
             <span style={{fontSize:'24px'}}>📧</span>
             <h4>Email Address</h4>
-            <p style={{color:'#10b981', fontSize:'14px', marginTop:'5px'}}>csnwp@sltnet.lk</p>
+            <p style={{color:'#1df919', fontSize:'14px', marginTop:'5px'}}>csnwp@sltnet.lk</p>
           </div>
           <div style={styles.contactCard}>
             <span style={{fontSize:'24px'}}>📞</span>
             <h4>Hotline Numbers</h4>
-            <p style={{color:'#94a3b8', fontSize:'14px', marginTop:'5px'}}>+94 37 22 31769</p>
+            <p style={{color:'#010304', fontSize:'14px', marginTop:'5px'}}>+94 37 22 31769</p>
           </div>
         </div>
       </div>
@@ -200,127 +245,148 @@ const MainHome = ({ setView }) => {
 };
 
 // FULLY RE-STYLED PROFESSIONAL LOOK
+
+
+
 const styles = {
   container: {
   width: '100vw', 
   minHeight: '100vh',
-  color: '#ffffff', 
-  fontFamily: "'Inter', 'Segoe UI', sans-serif",
   display: 'flex', 
   flexDirection: 'column', 
   alignItems: 'center',
   overflowX: 'hidden', 
-  transition: 'all 1s ease', 
   
-  // 🎯 මගේ නිර්දේශය: පසුබිම ස්ථාවරව සහ පිරිසිදුව තබා ගැනීමට මේ පේළි 3 එකතු කරන්න
-  backgroundAttachment: 'fixed',
+  // මේ විදිහට Gradient එකත් එක්ක Image එක එකම පේළියේ දාන්න:
+ container: {
+  // ... අනෙක් ස්ටයිල්ස් ...
+  backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/image/e1.jpg')",
   backgroundSize: 'cover',
-  backgroundRepeat: 'no-repeat'
+  backgroundPosition: 'center',
+  backgroundAttachment: 'fixed',
+  backgroundRepeat: 'no-repeat',
+  
+  // මෙන්න මේක එකතු කරන්න (පින්තූරය වැහෙන එක නවත්වන්න)
+  isolation: 'isolate', 
+}
 },
+  
+
   navbar: {
-    width: '85%', maxWidth: '1200px', display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', padding: '25px 0', borderBottom: '1px solid rgba(255,255,255,0.08)'
+    width: '90%', maxWidth: '1300px', display: 'flex', justifyContent: 'space-between',
+    alignItems: 'center', padding: '20px 30px', margin: '20px',
+    background: 'rgba(255, 255, 255, 0.03)',
+    backdropFilter: 'blur(15px)',
+    borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)'
   },
-  logoSection: { display: 'flex', alignItems: 'center', gap: '12px' },
-  logoImg: { height: '38px', width: '38px', objectFit: 'contain' },
-  logoText: { fontSize: '20px', fontWeight: 'bold', letterSpacing: '0.5px', color: '#fff' },
-  logoHighlight: { color: '#10b981' },
+  logoSection: { display: 'flex', alignItems: 'center', gap: '15px' },
+  logoImg: { height: '40px', width: '40px', borderRadius: '8px', objectFit: 'cover' },
+  logoText: { fontSize: '18px', fontWeight: '800', letterSpacing: '1px',color: '#10b981' },
+  logoHighlight: { color: '#10b981', marginLeft: '5px' },
   
-  navLinks: { display: 'flex', gap: '25px' },
-  navLink: { textDecoration: 'none', color: '#94a3b8', fontSize: '15px', fontWeight: '500', transition: 'color 0.3s' },
+  navLinks: { display: 'flex', gap: '30px' },
+  navLink: { textDecoration: 'none', color: '#cbd5e1', fontSize: '14px', fontWeight: '500', transition: '0.3s' },
   
-  navButtons: { display: 'flex', gap: '12px' },
+  navButtons: { display: 'flex', gap: '15px' },
   loginBtn: {
-    background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)',
-    padding: '8px 22px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', transition: 'all 0.3s'
+    background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+    padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600'
   },
   registerBtn: {
-    background: '#10b981', color: '#ffffff', border: 'none',
-    padding: '8px 22px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', transition: 'background 0.3s'
+    background: 'transparent', color: '#faf5f5', border: '1px solid rgba(255,255,255,0.3)',
+    padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600'
   },
 
-  // HERO SECTION SPLIT STYLE
-  heroSection: { 
-    width: '85%', maxWidth: '1200px', display: 'flex', justifyContent: 'space-between', 
-    alignItems: 'center', marginTop: '70px', marginBottom: '60px', flexWrap: 'wrap', gap: '40px' 
-  },
-  heroLeft: { flex: '1', minWidth: '300px', textAlign: 'left' },
-  heroRight: { flex: '0.8', minWidth: '300px', display: 'flex', justifyContent: 'center' },
-  timeGreetingBadge: { 
-    display: 'inline-block', background: 'rgba(243, 161, 82, 0.15)', color: '#f3a152', 
-    padding: '6px 16px', borderRadius: '50px', fontSize: '14px', fontWeight: 'bold', marginBottom: '15px' 
-  },
-  mainTitle: { fontSize: '46px', fontWeight: '800', margin: '0 0 15px 0', lineHeight: '1.2', letterSpacing: '-0.5px' },
-  subTitle: { fontSize: '16px', color: '#94a3b8', marginBottom: '30px', lineHeight: '1.6', maxWidth: '550px' },
-  
-  heroBtnPrimary: { textDecoration: 'none', background: '#10b981', color: '#fff', padding: '12px 25px', borderRadius: '8px', fontWeight: '600', fontSize: '15px' },
-  heroBtnSecondary: { textDecoration: 'none', background: 'rgba(255,255,255,0.05)', color: '#fff', padding: '12px 25px', borderRadius: '8px', fontWeight: '600', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)' },
-  
-  clockContainer: { background: 'rgba(0,0,0,0.25)', padding: '25px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', width: '260px' },
-  clockLabel: { fontSize: '11px', color: '#64748b', fontWeight: 'bold', letterSpacing: '2px', display: 'block', marginBottom: '8px' },
-  clockBox: { fontSize: '32px', fontWeight: 'bold', color: '#10b981', letterSpacing: '1px' },
-  
-  // NEW GENERIC SECTION STYLES
-  sectionContainer: { width: '85%', maxWidth: '1200px', padding: '60px 0', textAlign: 'center' },
-  sectionHeader: { marginBottom: '40px' },
-  sectionTitle: { fontSize: '30px', fontWeight: '700', color: '#ffffff' },
-  sectionSubtitle: { fontSize: '15px', color: '#94a3b8', marginTop: '5px' },
-  
-  featuresGrid: { display: 'flex', gap: '25px', flexWrap: 'wrap', justifyContent: 'center' },
-  featureCard: { 
-    flex: '1', minWidth: '280px', maxWidth: '360px', background: 'rgba(255,255,255,0.03)', 
-    padding: '30px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'left'
-  },
-  featureIcon: { fontSize: '28px', marginBottom: '15px' },
-  featureCardTitle: { fontSize: '18px', fontWeight: '600', marginBottom: '10px' },
-  featureCardDesc: { fontSize: '14px', color: '#94a3b8', lineHeight: '1.5' },
 
-  // RACK STYLES (Kept intact, just padded and polished)
+
+
+  heroSection: {
+    width: '90%', maxWidth: '1300px', display: 'flex', justifyContent: 'space-between',
+    alignItems: 'center', padding: '60px', borderRadius: '30px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    backdropFilter: 'blur(25px)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+    marginTop: '20px', marginBottom: '40px', gap: '40px'
+  },
+  heroLeft: { flex: '1', textAlign: 'left' },
+  timeGreetingBadge: {
+    display: 'inline-block', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981',
+    padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px'
+  },
+  mainTitle: { fontSize: '52px', fontWeight: '900', margin: '0 0 20px 0', lineHeight: '1.1',color: '#040404' },
+  subTitle: { fontSize: '16px', color: '#f0f3f7', marginBottom: '40px', lineHeight: '1.7', maxWidth: '500px' },
+  heroBtnPrimary: { textDecoration: 'none', background: '#10b981', color: '#080000', padding: '15px 30px', borderRadius: '12px', fontWeight: '700' },
+  heroBtnSecondary: { textDecoration: 'none', background: 'rgba(255,255,255,0.05)', color: '#fff', padding: '15px 30px', borderRadius: '12px', fontWeight: '600', border: '1px solid rgba(255,255,255,0.1)' },
+  
+  clockContainer: { background: 'rgba(0,0,0,0.3)', padding: '30px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' },
+  clockLabel: { fontSize: '10px', color: '#030303', letterSpacing: '3px', marginBottom: '10px', display: 'block' },
+  clockBox: { fontSize: '40px', fontWeight: '800', color: '#10b981', fontFamily: 'monospace' },
+
+  sectionContainer: { width: '90%', maxWidth: '1300px', padding: '80px 0', textAlign: 'center' },
+  sectionTitle: { fontSize: '36px', fontWeight: '800', marginBottom: '10px' , color: '#f3f6f9'},
+  sectionSubtitle: { color: '#f3f6f9', marginBottom: '50px' },
+  featuresGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' },
+  featureCard: {
+    background: 'rgba(255, 255, 255, 0.47)', padding: '40px', borderRadius: '20px',
+    border: '1px solid rgba(255,255,255,0.05)', textAlign: 'left', transition: '0.4s'
+  },
+  featureIcon: { fontSize: '32px', marginBottom: '20px' },
+  featureCardTitle: { fontSize: '20px', marginBottom: '10px', color: '#060606' },
+  featureCardDesc: { fontSize: '14px', color: '#ffffff', lineHeight: '1.6' },
+
   rackSection: {
-    width: '85%', maxWidth: '1200px', background: 'rgba(15, 23, 42, 0.4)',
-    backdropFilter: 'blur(20px)', padding: '40px', borderRadius: '24px',
-    border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '20px',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+    width: '90%', maxWidth: '1300px', background: 'rgba(15, 23, 42, 0.6)',
+    backdropFilter: 'blur(30px)', padding: '50px', borderRadius: '30px',
+    border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)'
   },
-  rackHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '25px' },
-  rackTitle: { fontSize: '24px', fontWeight: '700', margin: 0, color: '#ffffff' },
-  rackSubtitle: { fontSize: '14px', margin: '5px 0 0 0', color: '#94a3b8' },
+  rackHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' },
+  rackTitle: { fontSize: '28px', fontWeight: '800',color: '#f6f7fa' },
+  rackSubtitle: { color: '#94a3b8', marginTop: '5px' },
   dropdown: {
-    background: '#0f172a', color: '#fff', border: '1px solid rgba(255,255,255,0.15)',
-    padding: '10px 18px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', outline: 'none'
+    background: '#0f172a', color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+    padding: '12px 25px', borderRadius: '12px', fontSize: '14px', cursor: 'pointer'
   },
-  legendContainer: { display: 'flex', gap: '20px', marginBottom: '25px' },
-  legendItem: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#cbd5e1' },
-  legendBox: { width: '16px', height: '16px', borderRadius: '4px' },
-  
   rackGrid: {
-    background: 'rgba(0, 0, 0, 0.4)', padding: '25px', borderRadius: '20px',
-    border: '4px solid #1e293b', display: 'flex', flexDirection: 'column', gap: '15px'
+    background: 'rgba(0,0,0,0.2)', padding: '30px', borderRadius: '20px',
+    border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '20px'
   },
-  shelfRow: { display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', borderBottom: '3px solid #334155' },
-  shelfLabel: { width: '90px', fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', textTransform: 'uppercase' },
-  slotsContainer: { flex: 1, display: 'flex', gap: '12px', justifyContent: 'space-around' },
+  shelfRow: { display: 'flex', alignItems: 'center', gap: '20px', padding: '10px' },
+  shelfLabel: { width: '80px', fontSize: '12px', fontWeight: 'bold', color: '#10b981', letterSpacing: '1px' },
+  slotsContainer: { flex: 1, display: 'flex', gap: '10px' },
   slotBox: {
-    flex: 1, height: '65px', borderRadius: '6px', transition: 'all 0.3s ease',
-    display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative'
+    flex: 1, height: '70px', borderRadius: '10px', transition: '0.3s',
+    display: 'flex', justifyContent: 'center', alignItems: 'center'
   },
-  fileLine: { width: '6px', height: '80%', background: 'rgba(255,255,255,0.25)', borderRadius: '2px' },
-  infoFooter: { fontSize: '13px', color: '#f59e0b', textAlign: 'center', marginTop: '25px', marginBottom: 0 },
+  infoFooter: { fontSize: '12px', color: '#f59e0b', textAlign: 'center', marginTop: '30px' },
+  aboutSection: { width: '100%', background: 'rgba(255,255,255,0.02)', padding: '80px 0', textAlign: 'center' },
+  aboutContent: { width: '90%', maxWidth: '800px', margin: 'auto' },
+  aboutText: { fontSize: '18px', color: '#cbd5e1', lineHeight: '1.8' },
+  contactGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '40px' },
+  contactCard: { background: 'rgba(255, 255, 255, 0.47)', padding: '30px', borderRadius: '16px',color: '#02060a' },
+  footer: { width: '100%', padding: '40px 0', textAlign: 'center', color: '#d9dde1', fontSize: '12px' },
 
-  // ABOUT SECTION
-  aboutSection: { width: '100vw', background: 'rgba(0,0,0,0.2)', padding: '70px 0', display: 'flex', justifyContent: 'center', margin: '40px 0' },
-  aboutContent: { width: '85%', maxWidth: '800px', textAlign: 'center' },
-  aboutText: { fontSize: '16px', color: '#cbd5e1', lineHeight: '1.8', marginTop: '20px' },
-
-  // CONTACT SECTION
-  contactGrid: { display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '20px' },
-  contactCard: { 
-    flex: '1', minWidth: '250px', background: 'rgba(255,255,255,0.02)', padding: '25px', 
-    borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' 
+   legendContainer: {
+    display: 'flex',
+    gap: '20px',
+    marginBottom: '20px',
+    justifyContent: 'center',
+    color: '#fff',
+    fontSize: '14px'
   },
+  legendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  legendBox: {
+    width: '20px',
+    height: '20px',
+    borderRadius: '4px', // පොඩි රවුම් කොනක්
+    border: '1px solid rgba(255,255,255,0.3)' // බොක්ස් එක පේන්න පොඩි බෝඩර් එකක්
+  }
 
-  // FOOTER
-  footer: { width: '100vw', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '30px 0', textAlign: 'center', fontSize: '13px', color: '#64748b', marginTop: '40px' }
 };
+
 
 export default MainHome;

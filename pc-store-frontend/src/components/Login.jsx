@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const Login = ({ onLoginSuccess, switchToRegister }) => {
+// 🎯 App.jsx එකෙන් එන Props නිවැරදිවම මෙතනට ලබා දී ඇත (goToRegister, goToBack)
+const Login = ({ onLoginSuccess, goToRegister, goToBack }) => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
@@ -25,48 +26,121 @@ const Login = ({ onLoginSuccess, switchToRegister }) => {
 
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.logoArea}>
-          <h2 style={styles.title}>NWPC</h2>
-          <p style={styles.subtitle}>ලිපිගොනු පාලන පද්ධතිය | වයඹ පළාත් සභාව</p>
+      
+      {/* 👈 LEFT SIDE: SIGN IN FORM */}
+      <div style={styles.leftSide}>
+        <div style={styles.formWrapper}>
+          
+          {/* 🔙 ආපසු හැරී යාමේ බටන් එක (Go Back to MainHome) */}
+          <button onClick={goToBack} style={styles.backBtn}>⬅️ ආපසු පිටුවට</button>
+
+          <h2 style={styles.formTitle}>Sign In 🔑</h2>
+          <p style={styles.formSubtitle}>කරුණාකර පද්ධතියට පිවිසීම සඳහා ඔබේ රාජකාරී ගිණුම් විස්තර ඇතුළත් කරන්න.</p>
+          
+          {error && <div style={styles.errorAlert}>{error}</div>}
+
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>රාජකාරී ඊමේල් ලිපිනය (Email)</label>
+              <input 
+                type="email" 
+                name="email" 
+                value={formData.email} 
+                onChange={handleChange} 
+                required 
+                style={styles.input} 
+                placeholder="username@nw.gov.lk" 
+              />
+            </div>
+            
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>මුරපදය (Password)</label>
+              <input 
+                type="password" 
+                name="password" 
+                value={formData.password} 
+                onChange={handleChange} 
+                required 
+                style={styles.input} 
+                placeholder="••••••••" 
+              />
+            </div>
+
+            <button type="submit" style={styles.button}>ආරක්ෂිතව ඇතුල් වන්න</button>
+          </form>
+          
+          {/* 🎯 App.jsx එකට ගැලපෙන සේ onClick={goToRegister} ලෙස නිවැරදි කර ඇත */}
+          <p style={styles.footerText}>
+            පද්ධතියේ ගිණුමක් නොමැතිද? <span onClick={goToRegister} style={styles.link}>මෙහි ලියාපදිංචි වන්න</span>
+          </p>
         </div>
-        
-        {error && <div style={styles.errorAlert}>{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>රාජකාරී ඊමේල් ලිපිනය (Email)</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} required style={styles.input} placeholder="username@nw.gov.lk" />
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>මුරපදය (Password)</label>
-            <input type="password" name="password" value={formData.password} onChange={handleChange} required style={styles.input} placeholder="••••••••" />
-          </div>
-          <button type="submit" style={styles.button}>🔑 ආරක්ෂිතව ඇතුල් වන්න</button>
-        </form>
-
-        <p style={styles.footerText}>
-          පද්ධතියේ ගිණුමක් නොමැතිද? <span onClick={switchToRegister} style={styles.link}>මෙහි ලියාපදිංචි වන්න</span>
-        </p>
       </div>
+
+      {/* 🔲 VERTICAL DIVIDER LINE */}
+      <div style={styles.verticalLine}></div>
+
+      {/* 👉 RIGHT SIDE: LOGO & TOPIC */}
+      <div style={styles.rightSide}>
+        <div style={styles.logoWrapper}>
+          <img 
+            src="image\Nwp_sri_lanka.jpg" 
+            alt="NWPC Logo" 
+            style={styles.logoImg} 
+          />
+          <h1 style={styles.mainTopic}>NWPC STORES</h1>
+          <h3 style={styles.subTopic}>ලිපිගොනු පාලන පද්ධතිය</h3>
+          <p style={styles.descText}>වයඹ පළාත් සභාව - North Western Provincial Council</p>
+        </div>
+      </div>
+
     </div>
   );
 };
 
-// 🎨 MODERN MINIMALIST STYLES
+// 🎨 PREMIUM STYLES
 const styles = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '90vh', backgroundColor: '#f4f6f9' },
-  card: { backgroundColor: '#fff', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', width: '100%', maxWidth: '400px', textAlign: 'center' },
-  logoArea: { marginBottom: '30px' },
-  title: { margin: 0, color: '#007bff', fontSize: '32px', fontWeight: '800', letterSpacing: '1px' },
-  subtitle: { margin: '5px 0 0 0', color: '#666', fontSize: '13px', fontWeight: '500' },
-  inputGroup: { marginBottom: '20px', textAlign: 'left' },
-  label: { display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#333' },
-  input: { width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box', transition: '0.3s', backgroundColor: '#f8fafc' },
-  button: { width: '100%', padding: '14px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px', boxShadow: '0 4px 12px rgba(0,123,255,0.2)' },
-  errorAlert: { backgroundColor: '#fde8e8', color: '#9b1c1c', padding: '12px', borderRadius: '8px', fontSize: '14px', marginBottom: '20px', textAlign: 'left', borderLeft: '4px solid #f05252' },
-  footerText: { marginTop: '25px', fontSize: '14px', color: '#666' },
-  link: { color: '#007bff', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }
+  container: { 
+    display: 'flex', 
+    width: '100vw',
+    height: '100vh', 
+    backgroundColor: '#8b96f3', 
+    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    overflow: 'hidden'
+  },
+  leftSide: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px', position: 'relative' },
+  formWrapper: { width: '100%', maxWidth: '420px' },
+  backBtn: {
+    background: 'none', border: 'none', color: '#020202', fontSize: '14px', fontWeight: '600',
+    cursor: 'pointer', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '5px', padding: 0
+  },
+  formTitle: { fontSize: '32px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 10px 0' },
+  formSubtitle: { fontSize: '14px', color: '#0a0a0a', margin: '0 0 30px 0', lineHeight: '1.6' },
+  form: { display: 'flex', flexDirection: 'column', gap: '22px' },
+  inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' },
+  label: { fontSize: '14px', fontWeight: '600', color: '#050505' },
+  input: { 
+    width: '100%', padding: '14px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', 
+    fontSize: '15px', boxSizing: 'border-box', backgroundColor: '#ffffff', outline: 'none',
+    color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+  },
+  button: { 
+    width: '100%', padding: '14px', backgroundColor: '#3bf931', color: '#fff', border: 'none', 
+    borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '15px', 
+    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+  },
+  errorAlert: { 
+    backgroundColor: '#fde8e8', color: '#9b1c1c', padding: '14px', borderRadius: '10px', 
+    fontSize: '14px', marginBottom: '25px', textAlign: 'left', borderLeft: '4px solid #f05252'
+  },
+  footerText: { marginTop: '25px', fontSize: '14px', color: '#0a0b0b', textAlign: 'center' },
+  link: { color: '#1be632', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' },
+  verticalLine: { width: '2px', backgroundColor: '#090909', height: '70%', alignSelf: 'center' },
+  rightSide: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px' },
+  logoWrapper: { textAlign: 'center' },
+  logoImg: { width: '130px', height: '130px', objectFit: 'contain', marginBottom: '30px' },
+  mainTopic: { fontSize: '40px', fontWeight: '800', color: '#eff1f7', letterSpacing: '1px', margin: '0 0 8px 0' },
+  subTopic: { fontSize: '18px', fontWeight: '600', color: '#f8fdfb', margin: '0 0 8px 0', lineHeight: '1.4' },
+  descText: { fontSize: '14px', color: '#eef2f6', fontWeight: '500', margin: 0 }
 };
 
 export default Login;

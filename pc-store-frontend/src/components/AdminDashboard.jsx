@@ -116,6 +116,7 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
         <span style={styles.badge}>Control Center</span>
 
         <nav style={styles.nav}>
+
           <div style={{ ...styles.navItem, ...(activeTab === 'USERS' && styles.activeNav) }} onClick={() => setActiveTab('USERS')}>🛡️ User Management</div>
           <div style={{ ...styles.navItem, ...(activeTab === 'QUEUE' && styles.activeNav) }} onClick={() => setActiveTab('QUEUE')}>⏳ Verification Queue</div>
           
@@ -138,6 +139,7 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
     fontWeight: 'bold',
     marginTop: 'auto', // පතුලටම තල්ලු කිරීමට
     width: '100%'
+   
   }} 
   onClick={() => {
     if(window.confirm("ඔබට පද්ධතියෙන් ඉවත් වී ප්‍රධාන පිටුවට යාමට අවශ්‍යද?")) {
@@ -227,110 +229,183 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
         )}
 
         {/* 2. VERIFICATION QUEUE */}
-        {activeTab === 'QUEUE' && (
-          <div style={{ display: 'flex', gap: '25px', flexWrap: 'wrap' }}>
-            <div style={{ ...styles.card, flex: 2, minWidth: '500px' }}>
-              <h3>⏳ Verification Queue</h3>
-              <p style={styles.desc}>සබ්ජෙක්ට් ඔෆිසර්ලා ඇතුළත් කළ ලිපිගොනු නිවැරදිදැයි බලා ඒවා භෞතිකව තැන්පත් කරන ස්ථාන වෙන් කරන්න.</p>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.thRow}>
-                    <th>File No</th>
-                    <th>File Name</th>
-                    <th>Category</th>
-                    <th>Officer Email</th>
-                    <th>View Document</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingFiles.length === 0 ? (
-                    <tr><td colSpan="6" style={styles.emptyTd}>✅ සත්‍යාපනය කිරීමට ලිපිගොනු කිසිවක් පෝලිමේ නොමැත.</td></tr>
-                  ) : (
-                    pendingFiles.map(f => (
-                      <tr key={f._id} style={styles.trRow}>
-                        <td style={styles.boldTd}>{f.fileNumber}</td>
-                        <td>{f.fileName}</td>
-                        <td><span style={styles.catBadge}>{f.category}</span></td>
-                        
-                        <td style={{ fontSize: '13px', color: '#334155', fontWeight: '500' }}>
-  {(() => {
-    // 1. දත්තයක් නැත්නම්, null නම් හෝ "undefined" කියා String එකක් ලෙස ඇත්නම්
-    if (!f.submittedBy || f.submittedBy === 'undefined') {
-      return <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>⚠️ Not Available</span>;
-    }
+       {/* 2. VERIFICATION QUEUE */}
+{activeTab === 'QUEUE' && (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', width: '100%' }}>
     
-    // 2. 📧 ඩේටාබේස් එකේ කෙලින්ම Email එකක්ම සේව් වී ඇත්නම් (@ ලකුණ තිබේ නම්)
-    if (f.submittedBy.includes('@')) {
-      return <span>{f.submittedBy}</span>;
-    }
-    
-    // 3. 🎯 ඔයාගේ අලුත් ID එක ආවොත් (D.D.S.Kumara මහතාගේ ID එක)
-    if (f.submittedBy === '6a1023aa78bf292b93e74773') {
-      return <span style={{ color: '#0f766e', fontWeight: 'bold' }}>kumara@gmail.com (D.D.S.Kumara)</span>;
-    }
-    
-    // 4. වෙනත් ඕනෑම ID එකක් ආවොත් පෙන්වන ක්‍රමය (Fallback)
-    return <span style={{ color: '#64748b', fontSize: '11px' }}>🆔 ID: {f.submittedBy.substring(0, 8)}...</span>;
-  })()}
-</td>
+    {/* TOP SECTION: FULL-WIDTH SPACIOUS FILE TABLE */}
+    <div style={{ ...styles.card, width: '100%', padding: '20px', boxSizing: 'border-box' }}>
+      
+      {/* HEADER INFO */}
+      <div style={{ borderBottom: '3px solid #f1f5f9', paddingBottom: '18px', marginBottom: '25px' }}>
+        <h3 style={{ margin: 0, fontSize: '22px', color: '#0b0b0b', fontWeight: '700', letterSpacing: '0.5px' }}>⏳ File Verification Queue</h3>
+        <p style={{ ...styles.desc, margin: '6px 0 0 0', fontSize: '14px' }}>සබ්ජෙක්ට් ඔෆිසර්ලා ඇතුළත් කළ ලිපිගොනු නිවැරදිදැයි බලා ඒවා භෞතිකව තැන්පත් කරන ස්ථාන වෙන් කරන්න.</p>
+      </div>
 
-                        
-                        <td>
-                          {f.fileUrl ? (
-                            <a href={`http://localhost:5000${f.fileUrl}`} target="_blank" rel="noopener noreferrer" style={styles.viewFileLink}>Open File 👁️</a>
-                          ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '12px' }}>No File</span>
-                          )}
-                        </td>
-                        <td>
-                          <button 
-                            style={{
-                              ...styles.selectBtn, 
-                              background: selectedFileId === f._id ? '#10b981' : '#3b82f6',
-                              marginRight: '6px'
-                            }} 
-                            onClick={() => {
-                              setSelectedFileId(f._id);
-                              setRackNumber('');
-                              setShelfNumber('');
-                            }}
-                          >
-                            {selectedFileId === f._id ? 'Selected 🎯' : 'Select 🗄️'}
-                          </button>
-                          <button style={styles.rejectBtn} onClick={() => handleRejectFile(f._id)}>Reject ✕</button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+      {/* WIDE PROFESSIONAL TABLE */}
+      <table style={styles.proWideTable}>
+        <thead>
+          <tr style={styles.proThRow}>
+            <th style={{ ...styles.proTh, width: '25%',textAlign: 'left' }}>File Details (අංකය සහ නම)</th>
+            <th style={{ ...styles.proTh, width: '15%',textAlign:  'left'}}>Category</th>
+            <th style={{ ...styles.proTh, width: '25%',textAlign: 'left' }}>Officer Email / Identity</th>
+            <th style={{ ...styles.proTh, width: '15%', textAlign: 'left' }}>Document</th>
+            <th style={{ ...styles.proTh, width: '20%', textAlign: 'left' }}>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pendingFiles.length === 0 ? (
+            <tr>
+              <td colSpan="5" style={styles.emptyTd}>
+                ✅ සත්‍යාපනය කිරීමට ලිපිගොනු කිසිවක් පෝලිමේ නොමැත.
+              </td>
+            </tr>
+          ) : (
+            pendingFiles.map(f => {
+              const isSelected = selectedFileId === f._id;
+              return (
+                <tr 
+                  key={f._id} 
+                  style={{ 
+                    ...styles.proTrRow, 
+                    backgroundColor: isSelected ? '#f0fdf4' : '#ffffff',
+                    borderLeft: isSelected ? '5px solid #10b981' : '5px solid transparent'
+                  }}
+                >
+                  {/* ෆයිල් විස්තර */}
+                  <td style={styles.proTd}>
+                    <div style={{ fontWeight: '700', color: '#101011', fontSize: '13px', letterSpacing: '0.5px' }}>{f.fileNumber}</div>
+                    <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px', lineHeight: '1.4' }}>{f.fileName}</div>
+                  </td>
+                  
+                  {/* වර්ගීකරණය */}
+                  <td style={styles.proTd}>
+                    <span style={styles.catBadge}>{f.category}</span>
+                  </td>
+                  
+                  {/* නිලධාරියා */}
+                  <td style={styles.proTd}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {(() => {
+                        if (!f.submittedBy || f.submittedBy === 'undefined') {
+                          return <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>⚠️ Not Available</span>;
+                        }
+                        if (f.submittedBy.includes('@')) {
+                          return <span style={{ color: '#0d0d0e', fontWeight: '200' }}> {f.submittedBy}</span>;
+                        }
+                        if (f.submittedBy === '6a1023aa78bf292b93e74773') {
+                          return (
+                            <div>
+                              <span style={{ color: '#0f766e', fontWeight: 'bold', display: 'block' }}>👤 D.D.S.Kumara</span>
+                              <span style={{ color: '#64748b', fontSize: '13px' }}>kumara@gmail.com</span>
+                            </div>
+                          );
+                        }
+                        return <span style={{ color: '#64748b', fontSize: '12px' }}>🆔 ID: {f.submittedBy.substring(0, 8)}...</span>;
+                      })()}
+                    </div>
+                  </td>
+                  
+                  {/* ඩිජිටල් ලිපිය */}
+                  <td style={{ ...styles.proTd, textAlign: 'center' }}>
+                    {f.fileUrl ? (
+                      <a 
+                        href={`http://localhost:5000${f.fileUrl}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={styles.proPdfBtn}
+                      >
+                        View PDF 📄
+                      </a>
+                    ) : (
+                      <span style={{ color: '#cbd5e1', fontSize: '12px', fontStyle: 'italic' }}>No File</span>
+                    )}
+                  </td>
+                  
+                  {/* බොත්තම් */}
+                  <td style={{ ...styles.proTd, textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '12px' }}>
+                      <button 
+                        style={{
+                          ...styles.proSelectBtn, 
+                          background: isSelected ? '#1d52ee' : '#3b82f6',
+                          boxShadow: isSelected ? '0 3px 8px rgba(16,185,129,0.25)' : '0 3px 8px rgba(59,130,246,0.15)'
+                        }} 
+                        onClick={() => {
+                          setSelectedFileId(f._id);
+                          setRackNumber('');
+                          setShelfNumber('');
+                        }}
+                      >
+                        {isSelected ? 'Selected 🎯' : 'Select 🗄️'}
+                      </button>
+                      <button style={styles.proRejectBtn} onClick={() => handleRejectFile(f._id)}>
+                        Reject ✕
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+
+    {/* BOTTOM SECTION: RACK ASSIGNMENT BOX (⚠️ දැන් පහළට ගෙනාවා) */}
+    <div 
+      style={{ 
+        ...styles.card, 
+        width: '100%', 
+        background: selectedFileId ? '#83d9f9' : '#f8fafc', 
+        padding: '30px', 
+        border: selectedFileId ? '1px solid #10b981' : '1px solid #6ff36f', 
+        boxSizing: 'border-box',
+        transition: 'all 0.3s' 
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>🗄️ Physical Rack & Shelf Assignment</h3>
+        {!selectedFileId && <span style={{ fontSize: '12px', background: '#2e85f7', padding: '3px 10px', borderRadius: '50px', color: '#0c0c0c' }}>Waiting for selection</span>}
+      </div>
+      
+      {selectedFileId ? (
+        <form onSubmit={handleAssignRack} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Selected File Details Banner */}
+          <div style={{ fontSize: '14px', background: '#f0fdf4', padding: '15px', borderRadius: '8px', color: '#166534', fontWeight: '600', border: '1px solid #bbf7d0', display: 'flex', justifyContent: 'space-between' }}>
+            <span>🎯 දැනට තෝරාගත් ලිපිගොනුව (Active Mapping ID)</span>
+            <span style={{ fontFamily: 'monospace', color: '#15803d' }}>{selectedFileId}</span>
+          </div>
+          
+          {/* Dual Column Inputs */}
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={styles.newLabel}>Rack Number (රාක්ක අංකය)</label>
+              <input type="text" style={styles.newInput} placeholder="e.g., Rack 03" value={rackNumber} onChange={(e) => setRackNumber(e.target.value)} required />
             </div>
-
-            {/* RACK ASSIGNMENT BOX */}
-            <div style={{ ...styles.card, flex: 1, minWidth: '280px', background: selectedFileId ? '#fff' : '#f8fafc' }}>
-              <h3>🗄️ Rack Assignment</h3>
-              <p style={styles.desc}>තෝරාගත් ලිපිගොනුව ගබඩා කරන භෞතික Rack සහ Shelf අංක ලබාදෙන්න.</p>
-              {selectedFileId ? (
-                <form onSubmit={handleAssignRack} style={styles.form}>
-                  <div style={{ fontSize: '12px', background: '#eff6ff', padding: '8px', borderRadius: '6px', color: '#1e40af', fontWeight: '600' }}>
-                    පෙළගැස්ම ID: {selectedFileId}
-                  </div>
-                  <label style={styles.label}>Rack Number (රාක්ක අංකය)</label>
-                  <input type="text" style={styles.input} placeholder="e.g., Rack 01" value={rackNumber} onChange={(e) => setRackNumber(e.target.value)} required />
-                  
-                  <label style={styles.label}>Shelf Number (තට්ටු අංකය)</label>
-                  <input type="text" style={styles.input} placeholder="e.g., Shelf 03" value={shelfNumber} onChange={(e) => setShelfNumber(e.target.value)} required />
-                  
-                  <button type="submit" style={styles.submitBtn}>Verify & Confirm Mapping 🚀</button>
-                </form>
-              ) : (
-                <div style={styles.placeholderText}>කරුණාකර වම්පස වගුවෙන් ලිපිගොනුවක් තෝරන්න.</div>
-              )}
+            
+            <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={styles.newLabel}>Shelf Number (තට්ටු අංකය)</label>
+              <input type="text" style={styles.newInput} placeholder="e.g., Shelf 02" value={shelfNumber} onChange={(e) => setShelfNumber(e.target.value)} required />
             </div>
           </div>
-        )}
+          
+          {/* Action Button */}
+          <button type="submit" style={{ ...styles.newSubmitBtn, alignSelf: 'flex-start', padding: '14px 35px',color :'#090909' }}>
+            Verify & Confirm Location Mapping 🚀
+          </button>
+        </form>
+      ) : (
+        <div style={{ ...styles.newPlaceholder, padding: '40px 20px' }}>
+          <span style={{ fontSize: '24px', marginRight: '10px' }}> </span>
+          ඉහත වගුවෙන් ලිපිගොනුවක් තෝරාගත් පසු (Select කළ පසු) රාක්ක අංක ඇතුළත් කිරීමේ පෝරමය මෙතනින් දිස්වේවි.
+        </div>
+      )}
+    </div>
 
+  </div>
+)}
         {/* 🗄️ 3. NEW TAB: MANAGED RACK INVENTORY (රාක්ක ගත කළ ෆයිල් පමණක් පෙන්වන පේජය) */}
         {activeTab === 'VERIFIED_LIST' && (
           <div style={styles.card}>
@@ -463,11 +538,13 @@ const styles = {
   card: { background: '#fff', padding: '25px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', width: '100%', border: '1px solid #e2e8f0' },
   desc: { fontSize: '13px', color: '#64748b', marginBottom: '20px', lineHeight: '1.5' },
   
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '14px', textAlign: 'left' },
-  thRow: { background: '#f1f5f9', color: '#475569', borderBottom: '2px solid #e2e8f0' },
-  trRow: { borderBottom: '1px solid #f1f5f9', height: '50px' },
-  boldTd: { fontWeight: 'bold', color: '#0f172a' },
-  emptyTd: { textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '15px' },
+  table: { width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem', fontSize: '14px', textAlign: 'left', minWidth: '720px' },
+  thRow: { background: '#f1f5f9', color: '#475569', borderBottom: '2px solid #e2e8f0', letterSpacing: '0.02em' },
+  trRow: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', height: '56px', transition: 'transform 0.18s ease, box-shadow 0.18s ease', boxShadow: '0 1px 2px rgba(15,23,42,0.06)' },
+  boldTd: { fontWeight: '700', color: '#0f172a', padding: '16px 14px' },
+  emptyTd: { textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '15px' },
+  
+  riskCard: { border: '1px solid #dbeafe', boxShadow: '0 14px 28px rgba(15,23,42,0.08)' },
   
   roleBadge: { background: '#e0f2fe', color: '#0369a1', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' },
   catBadge: { background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' },
@@ -476,19 +553,43 @@ const styles = {
   // 🏢 අලුත් Location Badge එකකට Styles
   locationBadge: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' },
   // 🔍 සර්ච් බාර් එකේ ස්ටයිල්
-  searchBar: { padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '250px', outline: 'none', fontSize: '14px' },
+  searchBar: { padding: '10px 15px', borderRadius: '8px', border: '1px solid #2cdfeb', width: '250px', outline: 'none', fontSize: '14px' },
   
-  approveBtn: { background: '#10b981', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', marginRight: '8px', cursor: 'pointer', fontWeight: '600' },
-  rejectBtn: { background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' },
+  approveBtn: { background: '#2b28ec', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', marginRight: '8px', cursor: 'pointer', fontWeight: '600' },
+  rejectBtn: { background: '#fc1717', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' },
   selectBtn: { color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s' },
   
-  viewFileLink: { color: '#3b82f6', textDecoration: 'underline', fontWeight: '600', fontSize: '13px', cursor: 'pointer' },
+  viewFileLink: { color: '#2945e6', textDecoration: 'underline', fontWeight: '600', fontSize: '13px', cursor: 'pointer' },
   
   form: { display: 'flex', flexDirection: 'column', gap: '12px' },
   label: { fontSize: '13px', fontWeight: '500' },
   input: { padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' },
   submitBtn: { background: '#10b981', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' },
-  placeholderText: { textAlign: 'center', color: '#94a3b8', fontSize: '13px', padding: '40px 0' }
+  placeholderText: { textAlign: 'center', color: '#94a3b8', fontSize: '13px', padding: '40px 0' },
+
+  // Styles Object එක තුළ
+proTh: { 
+  padding: '15px 25px', // උඩ/පහළ 15px, වම්/දකුණු 25px (පරතරය වැඩි කරන්න 25 වෙනුවට 30 හෝ 40 දාන්න)
+  fontWeight: '600', 
+  color: '#64748b', 
+  // ...
+},
+proTd: { 
+  padding: '20px 25px', // මෙහි අගය වැඩි කිරීමෙන් පේළි අතර සහ අකුරු අතර පරතරය තවත් වැඩි වේ.
+  verticalAlign: 'middle',
+  // ...
+},
+
+// Styles Object එක තුළ
+proWideTable: { 
+  width: '100%', 
+  borderCollapse: 'separate', 
+  borderSpacing: '0 20px', // මෙතන 20px කළොත් පේළි අතර පරතරය තවත් වැඩි වෙනවා
+  // ...
+},
+
+
+
 };
 
 export default AdminDashboard;
