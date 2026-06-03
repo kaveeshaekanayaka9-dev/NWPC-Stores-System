@@ -5,9 +5,13 @@ const FileSchema = new mongoose.Schema({
   fileName: { type: String, required: true },
   category: { type: String, required: true },
   description: { type: String },
-  submittedBy: { type: String, required: true },
-  fileUrl: { type: String, required: true }, // 👈 සර්වර් එකේ ෆයිල් එක සේව් වෙන පාර (Path)
+  submittedBy: {
+    type: String, // 👈 'string' වෙනුවට 'String' ලෙස නිවැරදි කළා
+    required: true
+  },
+  fileUrl: { type: String, required: true },
   isVerified: { type: String, enum: ['PENDING', 'VERIFIED', 'REJECTED'], default: 'PENDING' },
+  needsReapproval: { type: Boolean, default: false },
   rackNumber: { type: String, default: 'Unassigned' },
   shelfNumber: { type: String, default: 'Unassigned' },
   slotIndex: { type: Number, default: 0 }

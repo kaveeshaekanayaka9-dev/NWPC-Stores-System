@@ -139,7 +139,7 @@ const styles = {
   descText: { fontSize: '14px', color: '#efeaea', fontWeight: '500', margin: 0 },
 
   // VERTICAL DIVIDER LINE
-  verticalLine: { width: '2px', backgroundColor: '#cbd5e1', height: '70%', alignSelf: 'center' },
+  verticalLine: { width: '2px', backgroundColor: '#000307', height: '70%', alignSelf: 'center' },
 
   // RIGHT SIDE (FORM AREA)
   rightSide: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px' },
@@ -161,7 +161,7 @@ const styles = {
   },
   alert: { padding: '14px', borderRadius: '10px', fontSize: '14px', marginBottom: '25px', textAlign: 'left' },
   footerText: { marginTop: '25px', fontSize: '14px', color: '#0c0c0c', textAlign: 'center' },
-  link: { color: '#17e721', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }
+  link: { color: '#f1e31e', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }
 };
 
 export default Register;

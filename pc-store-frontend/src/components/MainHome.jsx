@@ -249,27 +249,25 @@ const columns = [1, 2, 3, 4, 5, 6, 7, 8];
 
 
 const styles = {
+ // ඔබේ styles වස්තුව මෙය ලෙස වෙනස් කරගන්න
+
   container: {
-  width: '100vw', 
-  minHeight: '100vh',
-  display: 'flex', 
-  flexDirection: 'column', 
-  alignItems: 'center',
-  overflowX: 'hidden', 
-  
-  // මේ විදිහට Gradient එකත් එක්ක Image එක එකම පේළියේ දාන්න:
- container: {
-  // ... අනෙක් ස්ටයිල්ස් ...
-  backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/image/e1.jpg')",
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  backgroundAttachment: 'fixed',
-  backgroundRepeat: 'no-repeat',
-  
-  // මෙන්න මේක එකතු කරන්න (පින්තූරය වැහෙන එක නවත්වන්න)
-  isolation: 'isolate', 
-}
-},
+    width: '100vw', 
+    minHeight: '100vh',
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center',
+    overflowX: 'hidden',
+    position: 'relative', // හරස් අතට Scroll වීම වළක්වයි
+    backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/image/e1.jpg')",
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed',
+    backgroundRepeat: 'no-repeat',
+    isolation: 'isolate',
+    paddingBottom: '50px' // පතුලේ ඉඩක් තැබීමට
+  },
+  // ... ඉතිරි styles සියල්ල මෙසේම තබන්න ...
   
 
   navbar: {
@@ -289,11 +287,11 @@ const styles = {
   
   navButtons: { display: 'flex', gap: '15px' },
   loginBtn: {
-    background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+    background: 'transparent', color: '#f6f6f9', border: '1px solid rgba(255,255,255,0.2)',
     padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600'
   },
   registerBtn: {
-    background: 'transparent', color: '#faf5f5', border: '1px solid rgba(255,255,255,0.3)',
+    background: 'transparent', color: '#f4f4f5', border: '1px solid rgba(255,255,255,0.3)',
     padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600'
   },
 

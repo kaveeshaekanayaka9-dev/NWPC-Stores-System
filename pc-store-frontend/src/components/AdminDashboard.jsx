@@ -17,6 +17,7 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   const [selectedFileId, setSelectedFileId] = useState(null);
   const [rackNumber, setRackNumber] = useState('');
   const [shelfNumber, setShelfNumber] = useState('');
+  const [reapprovalLocations, setReapprovalLocations] = useState({});
 
   useEffect(() => {
     loadAdminData();
@@ -41,7 +42,8 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   try {
     if (action === 'APPROVE') {
       // 1. Backend එකේ API එකට PUT Request එක යැවීම
-      const res = await axios.put(`http://localhost:5000/api/auth/approve-user/${id}`);
+     // නිවැරදි කේතය:
+const res = await axios.put(`http://localhost:5000/api/files/approve-file/${fileId}`);
       
       // 🎯 2. වැදගත්ම කොටස: ලිස්ට් එකෙන් අයින් නොකර, එම යූසර්ගේ 'isAdminApproved' ස්ටේට් එක පමණක් true කරයි
       setPendingUsers(prevUsers => 
@@ -58,6 +60,55 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   } catch (err) {
     console.error("Approval Error:", err);
     alert("🛑 ක්‍රියාවලිය අසාර්ථකයි. නැවත උත්සාහ කරන්න.");
+  }
+};
+
+const handleFileApproval = async (fileId) => {
+  try {
+    await axios.put(`http://localhost:5000/api/files/approve-file/${fileId}`);
+    alert("✅ ලිපිගොනුව සාර්ථකව අනුමත කරන ලදී!");
+    loadAdminData(); // ලැයිස්තුව නැවුම් කරයි
+  } catch (err) {
+    alert("❌ අනුමත කිරීම අසාර්ථකයි.");
+  }
+};
+
+const handleReapprovalLocationChange = (fileId, field, value) => {
+  setReapprovalLocations(prev => ({
+    ...prev,
+    [fileId]: {
+      ...prev[fileId],
+      [field]: value
+    }
+  }));
+};
+
+const handleReapproval = async (fileId) => {
+  const location = reapprovalLocations[fileId] || {};
+  const rack = location.rackNumber?.trim();
+  const shelf = location.shelfNumber?.trim();
+
+  if (!rack || !shelf) {
+    alert("Please enter rack number and shelf number before re-approval.");
+    return;
+  }
+
+  try {
+    await axios.put(`http://localhost:5000/api/files/verify-file/${fileId}`, {
+      rackNumber: rack,
+      shelfNumber: shelf
+    });
+
+    setReapprovalLocations(prev => {
+      const next = { ...prev };
+      delete next[fileId];
+      return next;
+    });
+
+    alert("File re-approved with rack and shelf location.");
+    loadAdminData();
+  } catch (err) {
+    alert("Re-approval failed: " + (err.response?.data?.message || err.message));
   }
 };
 
@@ -120,10 +171,17 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
           <div style={{ ...styles.navItem, ...(activeTab === 'USERS' && styles.activeNav) }} onClick={() => setActiveTab('USERS')}>🛡️ User Management</div>
           <div style={{ ...styles.navItem, ...(activeTab === 'QUEUE' && styles.activeNav) }} onClick={() => setActiveTab('QUEUE')}>⏳ Verification Queue</div>
           
+          <div 
+  style={{ ...styles.navItem, ...(activeTab === 'RE_APPROVAL' && styles.activeNav) }} 
+  onClick={() => setActiveTab('RE_APPROVAL')}
+>
+  🔄 Need Re-approval
+</div>
           {/* 🗄️ මෙන්න අලුතින් දාපු ටැබ් එක */}
           <div style={{ ...styles.navItem, ...(activeTab === 'VERIFIED_LIST' && styles.activeNav) }} onClick={() => setActiveTab('VERIFIED_LIST')}>🗄️ Managed Rack Inventory</div>
           
           <div style={{ ...styles.navItem, ...(activeTab === 'AUDIT' && styles.activeNav) }} onClick={() => setActiveTab('AUDIT')}>📊 System-Wide Audit</div>
+          
         </nav>
 
         {/* 🚪 පද්ධතියෙන් සම්පූර්ණයෙන්ම ඉවත් වීමේ බටන් එක */}
@@ -285,26 +343,33 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
                   
                   {/* නිලධාරියා */}
                   <td style={styles.proTd}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      {(() => {
-                        if (!f.submittedBy || f.submittedBy === 'undefined') {
-                          return <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>⚠️ Not Available</span>;
-                        }
-                        if (f.submittedBy.includes('@')) {
-                          return <span style={{ color: '#0d0d0e', fontWeight: '200' }}> {f.submittedBy}</span>;
-                        }
-                        if (f.submittedBy === '6a1023aa78bf292b93e74773') {
-                          return (
-                            <div>
-                              <span style={{ color: '#0f766e', fontWeight: 'bold', display: 'block' }}>👤 D.D.S.Kumara</span>
-                              <span style={{ color: '#64748b', fontSize: '13px' }}>kumara@gmail.com</span>
-                            </div>
-                          );
-                        }
-                        return <span style={{ color: '#64748b', fontSize: '12px' }}>🆔 ID: {f.submittedBy.substring(0, 8)}...</span>;
-                      })()}
-                    </div>
-                  </td>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+    {(() => {
+      // 1. කිසිදු දත්තයක් නොමැති නම්
+      if (!f.submittedBy) {
+        return <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>⚠️ Not Available</span>;
+      }
+
+      // 2. submittedBy යනු Object එකක් නම් (Populate කර ඇත්නම්)
+      if (typeof f.submittedBy === 'object' && f.submittedBy !== null) {
+        return (
+          <div>
+            <span style={{ color: '#0f766e', fontWeight: 'bold', display: 'block' }}>👤 {f.submittedBy.name || 'Officer'}</span>
+            <span style={{ color: '#64748b', fontSize: '13px' }}>{f.submittedBy.email}</span>
+          </div>
+        );
+      }
+
+      // 3. submittedBy යනු තවමත් ID එකක් හෝ Email string එකක් නම්
+      if (typeof f.submittedBy === 'string') {
+        if (f.submittedBy.includes('@')) {
+          return <span style={{ color: '#0d0d0e', fontWeight: '400' }}>{f.submittedBy}</span>;
+        }
+        return <span style={{ color: '#64748b', fontSize: '12px' }}>🆔 ID: {f.submittedBy.substring(0, 10)}...</span>;
+      }
+    })()}
+  </div>
+</td>
                   
                   {/* ඩිජිටල් ලිපිය */}
                   <td style={{ ...styles.proTd, textAlign: 'center' }}>
@@ -406,6 +471,87 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
 
   </div>
 )}
+
+{/* 3. RE-APPROVAL TAB */}
+{activeTab === 'RE_APPROVAL' && (
+  <div style={styles.card}>
+    <h3>🔄 Need Re-approval</h3>
+    <p style={styles.desc}>පරිශීලකයා විසින් යාවත්කාලීන කරන ලද සහ නැවත අනුමැතිය බලාපොරොත්තුවෙන් පවතින ලිපිගොනු.</p>
+    <table style={{ ...styles.table, minWidth: '900px' }}>
+      <thead>
+        <tr style={styles.thRow}>
+          <th style={{ width: '16%' }}>File Number</th>
+          <th style={{ width: '14%' }}>File Name</th>
+          <th style={{ width: '14%' }}>Status</th>
+          <th style={{ width: '14%' }}>Rack Number</th>
+          <th style={{ width: '14%' }}>Shelf Number</th>
+          <th style={{ width: '18%' }}>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {allFiles.filter(f => f.isVerified === 'PENDING' && f.needsReapproval === true).map(f => {
+          const location = reapprovalLocations[f._id] || {};
+
+          return (
+          <tr key={f._id} style={styles.trRow}>
+            <td style={styles.boldTd}>{f.fileNumber}</td>
+            <td>{f.fileName}</td>
+            <td><span style={{ color: '#d97706', fontWeight: 'bold' }}>Pending Re-approval</span></td>
+            <td>
+              <input
+                type="text"
+                style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }}
+                placeholder="Rack 03"
+                value={location.rackNumber || ''}
+                onChange={(e) => handleReapprovalLocationChange(f._id, 'rackNumber', e.target.value)}
+              />
+            </td>
+            <td>
+              <input
+                type="text"
+                style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }}
+                placeholder="Shelf 02"
+                value={location.shelfNumber || ''}
+                onChange={(e) => handleReapprovalLocationChange(f._id, 'shelfNumber', e.target.value)}
+              />
+            </td>
+            <td>
+              
+              <div style={styles.reapprovalActions}>
+              {f.fileUrl && (
+                <a
+                  href={`http://localhost:5000${f.fileUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ ...styles.reapprovalActionBtn, ...styles.reapprovalViewBtn }}
+                >
+                  View
+                </a>
+              )}
+               
+              <button
+                style={{ ...styles.reapprovalActionBtn, ...styles.reapprovalApproveBtn, padding:'6px 12px', backgroundColor: '#1e4eed',borderRadius:'6px',color:'#f8fafc',width:'fit-content' }}
+                onClick={() => handleReapproval(f._id)}
+              >
+                Re-approve
+              </button>
+              <button
+                style={{ ...styles.reapprovalActionBtn, ...styles.reapprovalRejectBtn, padding:'6px 12px', backgroundColor: '#dc2626',color:'#f8fafc',borderRadius:'6px' , width:'fit-content'}}
+                onClick={() => handleRejectFile(f._id)}
+              >
+                Reject
+              </button>
+              </div>
+            </td>
+            
+          </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+)}
+
         {/* 🗄️ 3. NEW TAB: MANAGED RACK INVENTORY (රාක්ක ගත කළ ෆයිල් පමණක් පෙන්වන පේජය) */}
         {activeTab === 'VERIFIED_LIST' && (
           <div style={styles.card}>
@@ -451,7 +597,10 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
                       <td style={styles.boldTd}>{f.fileNumber}</td>
                       <td>{f.fileName}</td>
                       <td><span style={styles.catBadge}>{f.category}</span></td>
-                      <td style={{ fontSize: '13px', color: '#64748b' }}>{f.submittedBy ? (typeof f.submittedBy === 'object' ? f.submittedBy.name : f.submittedBy) : 'System User'}</td>
+                    
+<td style={{ fontSize: '13px', color: '#475569', fontWeight: '500' }}>
+  👤 {f.submittedBy ? f.submittedBy : 'N/A'}
+</td>
                       <td>
                         {f.fileUrl ? (
                           <a href={`http://localhost:5000${f.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{ ...styles.viewFileLink, color: '#10b981' }}>
@@ -587,7 +736,11 @@ proWideTable: {
   borderSpacing: '0 20px', // මෙතන 20px කළොත් පේළි අතර පරතරය තවත් වැඩි වෙනවා
   // ...
 },
-
+tableCard: { 
+  width: '100%',      // පවතින ඉඩ ප්‍රමාණයට පමණක් සීමා වේ
+  maxWidth: '100%',   // තිරයෙන් පිටතට යාම වළක්වයි
+  overflowX: 'auto'   // Table එක පළල් නම් Table එක ඇතුළත පමණක් Scroll වේ
+}
 
 
 };

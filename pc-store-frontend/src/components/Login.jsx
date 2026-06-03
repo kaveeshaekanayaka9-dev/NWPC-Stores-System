@@ -32,10 +32,10 @@ const Login = ({ onLoginSuccess, goToRegister, goToBack }) => {
         <div style={styles.formWrapper}>
           
           {/* 🔙 ආපසු හැරී යාමේ බටන් එක (Go Back to MainHome) */}
-          <button onClick={goToBack} style={styles.backBtn}>⬅️ ආපසු පිටුවට</button>
+          <button onClick={goToBack} style={{ ...styles.backBtn, border: '1px solid #0e0d0d',borderRadius: '4px',backgroundColor: '#277af7',padding: '5px 10px' }}> Back </button>
 
           <h2 style={styles.formTitle}>Sign In 🔑</h2>
-          <p style={styles.formSubtitle}>කරුණාකර පද්ධතියට පිවිසීම සඳහා ඔබේ රාජකාරී ගිණුම් විස්තර ඇතුළත් කරන්න.</p>
+          <p style={styles.formSubtitle}>කරුණාකර පද්ධතියට පිවිසීම සඳහා ඔබේ රාජකාරී ගිණුම් විස්තර ඇතුලත් කරන්න.</p>
           
           {error && <div style={styles.errorAlert}>{error}</div>}
 
@@ -124,7 +124,7 @@ const styles = {
     color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
   },
   button: { 
-    width: '100%', padding: '14px', backgroundColor: '#3bf931', color: '#fff', border: 'none', 
+    width: '100%', padding: '14px', backgroundColor: '#1014f5', color: '#fff', border: 'none', 
     borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '15px', 
     boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
   },
@@ -133,7 +133,7 @@ const styles = {
     fontSize: '14px', marginBottom: '25px', textAlign: 'left', borderLeft: '4px solid #f05252'
   },
   footerText: { marginTop: '25px', fontSize: '14px', color: '#0a0b0b', textAlign: 'center' },
-  link: { color: '#1be632', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' },
+  link: { color: '#ffff2b', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' },
   verticalLine: { width: '2px', backgroundColor: '#090909', height: '70%', alignSelf: 'center' },
   rightSide: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px' },
   logoWrapper: { textAlign: 'center' },

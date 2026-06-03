@@ -3,7 +3,24 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // 👈 User Model එක
+const crypto = require('crypto');
 
+
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "පරිශීලකයා හමු නොවීය." });
+
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // පැය 1ක්
+    await user.save();
+
+    // ඊමේල් එක යැවීම (Nodemailer භාවිතා කරන්න)
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+    console.log("Reset Link:", resetUrl); // මෙය පරීක්ෂා කිරීමට පමණි
+    res.json({ message: "මුරපදය වෙනස් කිරීමේ ලින්ක් එක ඊමේල් කරන ලදී." });
+});
 // ==========================================
 // 1. 📝 SIGN UP / REGISTER API
 // ==========================================
@@ -28,6 +45,16 @@ router.post('/register', async (req, res) => {
         await user.save();
 
         res.status(201).json({ message: 'ලියාපදිංචිය සාර්ථකයි! Admin අනුමැතිය ලැබෙන තෙක් රැඳී සිටින්න.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 5. 👥 සියලුම නිලධාරීන් ලබාගැනීම
+router.get('/all-officers', async (req, res) => {
+    try {
+        const officers = await User.find({ role: 'SUBJECT_OFFICER' });
+        res.status(200).json(officers);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

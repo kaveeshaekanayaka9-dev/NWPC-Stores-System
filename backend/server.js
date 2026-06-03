@@ -56,6 +56,25 @@ app.get('/api/racks/:rackNumber', async (req, res) => {
     }
 });
 
+app.put('/api/files/:id', async (req, res) => {
+    try {
+        // දත්ත යාවත්කාලීන කරන අතරතුර status එක 'Pending' ලෙස වෙනස් කරන්න
+        const updatedFile = await File.findByIdAndUpdate(
+            req.params.id, 
+            { 
+                ...req.body, 
+                isVerified: 'PENDING',
+                needsReapproval: true,
+                status: 'Pending' // මෙන්න මෙතැනදී status එක වෙනස් වේ
+            }, 
+            { new: true }
+        );
+        res.json({ message: "File updated and sent for re-approval", updatedFile });
+    } catch (err) {
+        res.status(500).json({ error: "Update failed" });
+    }
+});
+
 // සර්වර් එක වැඩද කියලා බ්‍රවුසර් එකෙන් බලන්න සරල රවුට් එකක්
 app.get('/', (req, res) => {
     res.send('Provincial Council Store Management Server is Running...');

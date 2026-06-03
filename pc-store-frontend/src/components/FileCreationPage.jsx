@@ -33,7 +33,7 @@ const FileCreationPage = ({ user, goToDashboard }) => {
       formData.append('category', category);
       formData.append('description', description);
       // user?.email වෙනුවට user?.id ලෙස මාරු කරන්න
-      formData.append('submittedBy', user?.id || '');
+      formData.append('submittedBy', user.email );
       formData.append('attachedFile', attachedFile); // 👈 Backend Multer එක බලාපොරොත්තු වන නම (Key)
 
       // Axios හරහා Multipart දත්ත සර්වර් එකට යැවීම

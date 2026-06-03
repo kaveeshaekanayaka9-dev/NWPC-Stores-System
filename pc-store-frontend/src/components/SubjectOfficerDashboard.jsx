@@ -9,10 +9,90 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
   const [myFiles, setMyFiles] = useState([]); 
   const [allVerifiedFiles, setAllVerifiedFiles] = useState([]); 
   const [stats, setStats] = useState({ total: 0, pending: 0, verified: 0 });
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+const [currentFile, setCurrentFile] = useState(null);
+const [newFile, setNewFile] = useState(null);
 
+// ඉහළින් මෙය එකතු කරන්න
+const [officerData, setOfficerData] = useState({});
+
+// Officer ලැයිස්තුව ලබාගැනීමට useEffect එකක්
+useEffect(() => {
+  const fetchOfficers = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/auth/all-officers'); // ඔබේ officerලා ඉන්න route එක
+      // දත්ත Map කරගන්න: { "id123": "kumara@gmail.com", ... }
+      const map = {};
+      res.data.forEach(user => { map[user._id] = user.email; });
+      setOfficerData(map);
+    } catch (err) {
+      console.error("Officer data fetch failed", err);
+    }
+  };
+  fetchOfficers();
+}, []);
+
+   // Add these to your SubjectOfficerDashboard component
+const handleView = (file) => {
+  if (file.fileUrl) {
+    window.open(`http://localhost:5000${file.fileUrl}`, '_blank');
+  } else {
+    alert("සමාවන්න, මෙම ලිපිගොනුවට අදාළ PDF එකක් නොමැත.");
+  }
+};
+
+// 1. Modal එක විවෘත කිරීමට
+const handleEditClick = (file) => {
+    setCurrentFile(file);
+    setIsModalOpen(true);
+  };
+
+// 2. අලුත් ෆයිල් එක සහ status එක යාවත්කාලීන කිරීමට
+const handleUpdateSubmit = async () => {
+  if (!currentFile?._id) {
+    alert("Please select a file to update.");
+    return;
+  }
+
+  if (!newFile) {
+    alert("කරුණාකර නව ලිපිගොනුව තෝරන්න.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', newFile); // අලුත් ෆයිල් එක
+  formData.append('isVerified', 'PENDING'); // status එක PENDING කරයි
+
+  try {
+    await axios.put(`http://localhost:5000/api/files/update/${currentFile._id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    alert("✅ ලිපිගොනුව සහ අනුමැතිය නැවත යොමු කරන ලදී.");
+    setIsModalOpen(false); // Modal එක වසන්න
+    setNewFile(null); // පරණ දත්ත Reset කරන්න
+    fetchMyFiles(); // ලැයිස්තුව Refresh කරන්න
+  } catch (err) {
+    console.error(err);
+    alert("❌ යාවත්කාලීන කිරීම අසාර්ථකයි.");
+  }
+};
+
+const handleDelete = async (fileId) => {
+  if (window.confirm("මෙම ලිපිගොනුව මකා දැමීමට අවශ්‍යද?")) {
+    try {
+      await axios.delete(`http://localhost:5000/api/files/${fileId}`);
+      // Refresh the list after delete
+      fetchMyFiles(); 
+    } catch (err) {
+      alert("ලිපිගොනුව මැකීමේදී දෝෂයක් සිදු විය.");
+    }
+  }
+};
+  
   useEffect(() => {
     // 💡 user.email වෙනුවට user.id ඇති විට ක්‍රියාත්මක වේ
-    if (user && user.id) {
+    if (user && user.email) {
       fetchMyFiles();
       fetchAllVerifiedFiles();
     }
@@ -20,13 +100,13 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
 
   // 1. 👤 ඔෆිසර්ගේ පෞද්ගලික ෆයිල්ස් ලබාගැනීම
   const fetchMyFiles = async () => {
-    if (!user || !user.id) return;
+    if (!user || !user.email) return;
     
-    const officerId = user.id;
+    const officerEmail = user.email;
 
     try {
       // 💡 Method A: කෙලින්ම සර්වර් එකෙන් ID එක හරහා දත්ත ඉල්ලීම
-      const res = await axios.get(`http://localhost:5000/api/files/my-files/${officerId}`);
+      const res = await axios.get(`http://localhost:5000/api/files/my-files/${officerEmail}`);
       
       if (res.data && res.data.length > 0) {
         setMyFiles(res.data);
@@ -35,7 +115,7 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
         // 💡 Method B (Fallback): සර්වර් එකෙන් ආවේ නැත්නම් ඔක්කොම අරන් Frontend එකෙන් ID එකට Filter කරයි
         const allRes = await axios.get('http://localhost:5000/api/files/all-files');
         const filtered = allRes.data.filter(file => {
-          return file.submittedBy === officerId;
+          return file.submittedBy === officerEmail;
         });
         setMyFiles(filtered);
         calculateStats(filtered);
@@ -44,7 +124,7 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
       console.error("දත්ත ලබාගැනීමේදී ගැටලුවක්, Running client fallback...", err);
       try {
         const allRes = await axios.get('http://localhost:5000/api/files/all-files');
-        const filtered = allRes.data.filter(file => file.submittedBy === officerId);
+        const filtered = allRes.data.filter(file => file.submittedBy === officerEmail);
         setMyFiles(filtered);
         calculateStats(filtered);
       } catch (fallbackErr) {
@@ -52,6 +132,9 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
       }
     }
   };
+
+// මෙම කොටස සොයාගෙන වෙනස් කරන්න:
+
 
   // 2. 🗄️ ඇඩ්මින් වෙරිෆයි කරපු සියලුම ඔෆිසර්ලගේ ෆයිල්ස් ලබාගැනීම (Rack Locator සඳහා)
   const fetchAllVerifiedFiles = async () => {
@@ -129,7 +212,7 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
         
         <header style={styles.topHeader}>
           <h2>Subject Officer Dashboard</h2>
-          <div style={styles.headerRight}>පද්ධති වර්ෂය: 2026</div>
+          <div style={styles.headerRight}>Year:2026</div>
         </header>
 
         {/* ==========================================
@@ -164,15 +247,9 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
                 
                 <div style={styles.tableWrapper}>
                   <table style={styles.table}>
-                    <thead>
-                      <tr style={styles.thRow}>
-                        <th>File No</th>
-                        <th>File Name</th>
-                        <th>Category</th>
-                        <th>Approval Status</th>
-                        <th>Rack Location</th>
-                      </tr>
-                    </thead>
+                   <thead>
+  <tr style={styles.thRow}><th>File No</th><th>File Name</th><th>Category</th><th>Approval Status</th><th>Rack Location</th><th>Actions</th></tr>
+</thead>
                     <tbody>
                       {myFiles.length === 0 ? (
                         <tr><td colSpan="5" style={styles.emptyTd}>🗂️ ඔබ විසින් මෙතෙක් කිසිදු ලිපිගොනුවක් පද්ධතියට ඇතුළත් කර නොමැත.</td></tr>
@@ -194,6 +271,19 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
                             <td style={styles.locTd}>
                               {file.rackNumber === 'Unassigned' || !file.rackNumber ? '⏳ රඳවා ඇත' : `🗄️ ${file.rackNumber} - ${file.shelfNumber}`}
                             </td>
+                            <td style={styles.actionTd}>
+        <button style={styles.viewBtn} onClick={() => handleView(file)}>👁️</button> 
+        {/* පරණ බොත්තම: <button style={styles.editBtn} onClick={() => handleEdit(file)}>✏️</button> */}
+
+{/* අලුත් කළ යුතු බොත්තම: */}
+<button 
+  style={styles.editBtn} 
+  onClick={() => handleEditClick(file)} 
+>
+  ✏️
+</button>
+        <button style={styles.deleteBtn} onClick={() => handleDelete(file._id)}>🗑️</button>
+      </td>
                           </tr>
                         ))
                       )}
@@ -204,6 +294,8 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
             </div>
           </>
         )}
+
+        
 
         {/* ==========================================
             TAB 2: GLOBAL RACK LOCATOR VIEW (All Verified Files)
@@ -255,10 +347,13 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
                           <td style={styles.boldTd}>{f.fileNumber}</td>
                           <td>{f.fileName}</td>
                           <td><span style={styles.catBadge}>{f.category}</span></td>
-                          {/* 💡 නිවැරදි කිරීම: submittedBy යනු කෙලින්ම Email String එකක් නිසා කෙලින්ම render කරයි */}
-                          <td style={{ fontSize: '13px', color: '#475569', fontWeight: '500' }}>
-                            👤 {f.submittedBy || 'System User'}
-                          </td>
+                         
+                         <td style={{ fontSize: '13px', color: '#475569', fontWeight: '500' }}>
+  👤 {f.submittedBy ? f.submittedBy : 'N/A'}
+</td>
+                          
+
+                                  
                           <td>
                             <span style={styles.locationBadge}>
                               📍 {f.rackNumber} — {f.shelfNumber}
@@ -272,6 +367,21 @@ const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHom
             </div>
           </div>
         )}
+        {isModalOpen && (
+  <div style={styles.modalOverlay}>
+    <div style={styles.modalContent}>
+      <h3>📂 Update: {currentFile?.fileName}</h3>
+      <p>නව ලිපිගොනුවක් තෝරන්න (එය ස්වයංක්‍රීයව අනුමැතිය සඳහා යොමු වේ):</p>
+      
+      <input type="file" onChange={(e) => setNewFile(e.target.files[0])} />
+      
+      <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+        <button onClick={handleUpdateSubmit} style={styles.saveBtn}>Upload & Submit</button>
+        <button onClick={() => setIsModalOpen(false)} style={styles.cancelBtn}>Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
 
       </main>
     </div>
@@ -290,6 +400,14 @@ const styles = {
   navItemLink: { padding: '12px 15px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#cbd5e1', cursor: 'pointer', transition: '0.2s', '&:hover': { background: '#2d3748' } },
   activeNav: { background: '#3498db', color: '#fff', fontWeight: 'bold' },
   logoutBtn: { background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s' },
+
+ 
+  // ... ඔබේ පවතින styles
+  actionTd: { display: 'flex', gap: '8px', padding: '10px' },
+  viewBtn: { background: '#3498db', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' },
+  editBtn: { background: '#f1c40f', color: '#000', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' },
+  deleteBtn: { background: '#e74c3c', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' },
+
   
   mainContent: { flex: 1, padding: '35px', overflowY: 'auto' },
   topHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '15px', marginBottom: '30px' },
@@ -316,7 +434,12 @@ const styles = {
   locTd: { fontSize: '13px', fontWeight: '500', color: '#334155' },
   
   searchBar: { padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '250px', outline: 'none', fontSize: '14px' },
-  locationBadge: { background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' }
+  locationBadge: { background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px' },
+
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  modalContent: { background: '#fff', padding: '30px', borderRadius: '12px', width: '400px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
+  saveBtn: { background: '#2ecc71', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '6px', cursor: 'pointer' },
+  cancelBtn: { background: '#95a5a6', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '6px', cursor: 'pointer' }
 };
 
 export default SubjectOfficerDashboard;
