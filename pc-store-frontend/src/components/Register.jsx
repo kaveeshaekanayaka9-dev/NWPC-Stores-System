@@ -34,7 +34,7 @@ const Register = ({ goToLogin }) => {
       <div style={styles.leftSide}>
         <div style={styles.logoWrapper}>
           <img 
-            src="image\Nwp_sri_lanka.jpg" 
+            src="image\Nwp_sri_lanka-removebg-preview.png"
             alt="NWPC Logo" 
             style={styles.logoImg} 
           />

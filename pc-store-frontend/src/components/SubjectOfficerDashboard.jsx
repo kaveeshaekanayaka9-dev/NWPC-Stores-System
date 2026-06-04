@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHome }) => {
   const [activeTab, setActiveTab] = useState('DASHBOARD'); 
@@ -16,6 +18,8 @@ const [newFile, setNewFile] = useState(null);
 
 // ඉහළින් මෙය එකතු කරන්න
 const [officerData, setOfficerData] = useState({});
+const [selectedFiles, setSelectedFiles] = useState([]);
+const [allSelected, setAllSelected] = useState(false);
 
 // Officer ලැයිස්තුව ලබාගැනීමට useEffect එකක්
 useEffect(() => {
@@ -32,6 +36,53 @@ useEffect(() => {
   };
   fetchOfficers();
 }, []);
+
+const toggleFileSelection = (id) => {
+  if (selectedFiles.includes(id)) {
+    setSelectedFiles(selectedFiles.filter(item => item !== id));
+  } else {
+    setSelectedFiles([...selectedFiles, id]);
+  }
+};
+
+const toggleAll = () => {
+  if (allSelected) {
+    setSelectedFiles([]);
+  } else {
+    setSelectedFiles(myFiles.map(f => f._id));
+  }
+  setAllSelected(!allSelected);
+};
+
+const handleBulkDelete = async () => {
+  if (selectedFiles.length === 0) return alert("කරුණාකර අවම වශයෙන් එක් ෆයිල් එකක් හෝ තෝරන්න.");
+  if (window.confirm(`තෝරාගත් ෆයිල්ස් ${selectedFiles.length} මකා දැමීමට අවශ්‍යද?`)) {
+    // Backend API call එක මෙතනට ලියන්න
+    console.log("Deleting IDs:", selectedFiles);
+  }
+};
+
+const handleWhatsAppShare = (file) => {
+  const message = `PC-Store Update: ${file.fileName} - Status: ${file.status}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+};
+
+const handleDownload = (elementId) => {
+  const input = document.getElementById(elementId);
+  
+  if (!input) {
+    console.error("Element not found with ID:", elementId);
+    alert("ලිපිගොනුව බාගත කිරීමට දත්ත හමු නොවීය.");
+    return;
+  }
+
+  html2canvas(input, { useCORS: true, scale: 2 }).then((canvas) => {
+    const imgData = canvas.toDataURL('image/png', 1.0);
+    const pdf = new jsPDF('l', 'mm', 'a4');
+    pdf.addImage(imgData, 'PNG', 10, 10, 280, 20); 
+    pdf.save(`file_${elementId}.pdf`);
+  });
+};
 
    // Add these to your SubjectOfficerDashboard component
 const handleView = (file) => {
@@ -238,57 +289,83 @@ const handleDelete = async (fileId) => {
             <div style={styles.workspace}>
               <div style={styles.tableCard}>
                 <div style={styles.tableHeaderZone}>
-                  <div>
-                    <h3>🗂️ Personal Log & Verification Queue</h3>
-                    <p style={styles.cardDesc}>ඔබ ඇතුළත් කළ ලිපිගොනු වල වත්මන් තත්ත්වය සහ ඒවා වෙන් කර ඇති රාක්ක ස්ථාන.</p>
-                  </div>
-                  <button style={styles.shortcutBtn} onClick={goToFileCreation}>➕ Create New File</button>
-                </div>
+  <div>
+    <h3>🗂️ Personal Log & Verification Queue</h3>
+    <p style={styles.cardDesc}>ලිපිගොනු කළමනාකරණය කිරීමට තෝරා ඉහළින් ඇති බොත්තම් භාවිතා කරන්න.</p>
+  </div>
+  
+  <div style={{ display: 'flex', gap: '8px' }}>
+    <button style={styles.shortcutBtn} onClick={goToFileCreation}>➕ Create New File</button>
+    <button 
+  style={styles.viewBtn} 
+  onClick={() => {
+    if (selectedFiles.length > 0) {
+      // selectedFiles[0] හි ඇති ID එකට අදාළ ෆයිල් එක සොයාගන්න
+      const fileToView = myFiles.find(f => f._id === selectedFiles[0]);
+      handleView(fileToView);
+    } else {
+      alert("කරුණාකර VIEW කිරීමට ෆයිල් එකක් තෝරන්න.");
+    }
+  }}
+>
+  VIEW
+</button>
+    <button style={styles.editBtn} onClick={ handleEditClick}>EDITE</button>
+    <button style={styles.deleteBtn} onClick={handleBulkDelete}>🗑️ DELETE</button>
+    <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={handleWhatsAppShare}>📱 SHARE</button>
+     <button 
+  style={{ ...styles.viewBtn, background: '#f44336', color: 'white' }} 
+  onClick={() => {
+    if (selectedFiles.length > 0) {
+      handleDownload(`record-${selectedFiles[0]}`);
+    } else {
+      alert("කරුණාකර බාගත කිරීමට ෆයිල් එකක් තෝරන්න.");
+    }
+  }}
+>
+  DOWNLOAD
+</button>  
+  </div>
+</div>
+                
+
                 
                 <div style={styles.tableWrapper}>
                   <table style={styles.table}>
-                   <thead>
-  <tr style={styles.thRow}><th>File No</th><th>File Name</th><th>Category</th><th>Approval Status</th><th>Rack Location</th><th>Actions</th></tr>
-</thead>
-                    <tbody>
-                      {myFiles.length === 0 ? (
-                        <tr><td colSpan="5" style={styles.emptyTd}>🗂️ ඔබ විසින් මෙතෙක් කිසිදු ලිපිගොනුවක් පද්ධතියට ඇතුළත් කර නොමැත.</td></tr>
-                      ) : (
-                        myFiles.map((file, idx) => (
-                          <tr key={idx} style={styles.trRow}>
-                            <td style={styles.boldTd}>{file.fileNumber}</td>
-                            <td>{file.fileName}</td>
-                            <td><span style={styles.catBadge}>{file.category}</span></td>
-                            <td>
-                              <span style={{
-                                ...styles.statusBadge,
-                                background: file.isVerified === 'VERIFIED' ? '#e8f5e9' : file.isVerified === 'PENDING' ? '#fffde7' : '#ffebee',
-                                color: file.isVerified === 'VERIFIED' ? '#2e7d32' : file.isVerified === 'PENDING' ? '#f57f17' : '#c62828'
-                              }}>
-                                {file.isVerified}
-                              </span>
-                            </td>
-                            <td style={styles.locTd}>
-                              {file.rackNumber === 'Unassigned' || !file.rackNumber ? '⏳ රඳවා ඇත' : `🗄️ ${file.rackNumber} - ${file.shelfNumber}`}
-                            </td>
-                            <td style={styles.actionTd}>
-        <button style={styles.viewBtn} onClick={() => handleView(file)}>👁️</button> 
-        {/* පරණ බොත්තම: <button style={styles.editBtn} onClick={() => handleEdit(file)}>✏️</button> */}
-
-{/* අලුත් කළ යුතු බොත්තම: */}
-<button 
-  style={styles.editBtn} 
-  onClick={() => handleEditClick(file)} 
->
-  ✏️
-</button>
-        <button style={styles.deleteBtn} onClick={() => handleDelete(file._id)}>🗑️</button>
-      </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+  <thead>
+    <tr style={styles.thRow}>
+      <th><input type="checkbox" onChange={toggleAll} checked={allSelected} /></th>
+      <th>File No</th>
+      <th>File Name</th>
+      <th>Category</th>
+      <th>Status</th>
+      <th>Rack Location</th>
+    </tr>
+  </thead>
+  <tbody>
+    {myFiles.map((file) => (
+     
+      <tr key={file._id} id={`record-${file._id}`} style={styles.trRow}>
+        <td>
+          <input 
+            type="checkbox" 
+            checked={selectedFiles.includes(file._id)}
+            onChange={() => toggleFileSelection(file._id)}
+          />
+        </td>
+        <td style={styles.boldTd}>{file.fileNumber}</td>
+        <td>{file.fileName}</td>
+        <td><span style={styles.catBadge}>{file.category}</span></td>
+        <td>
+          <span style={{ ...styles.statusBadge, background: file.isVerified === 'VERIFIED' ? '#e8f5e9' : '#fffde7' }}>
+            {file.isVerified}
+          </span>
+        </td>
+        <td style={styles.locTd}>{file.rackNumber || '⏳ රඳවා ඇත'}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
                 </div>
               </div>
             </div>
@@ -391,7 +468,7 @@ const handleDelete = async (fileId) => {
 // CSS-IN-JS PROFESSIONAL THEME STYLES
 const styles = {
   dashboardContainer: { display: 'flex', width: '100vw', minHeight: '100vh', background: '#f4f6f9', fontFamily: "'Segoe UI', sans-serif", color: '#333' },
-  sidebar: { width: '260px', background: '#1e293b', color: '#fff', padding: '30px 20px', display: 'flex', flexDirection: 'column', boxShadow: '4px 0 10px rgba(0,0,0,0.05)' },
+  sidebar: { textAlign: 'left',width: '260px', background: '#0f172a', color: '#fff', padding: '30px 20px', display: 'flex', flexDirection: 'column', boxShadow: '4px 0 10px rgba(0,0,0,0.05)' },
   sidebarBrand: { fontSize: '20px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '20px', color: '#3498db' },
   userTag: { fontSize: '15px', margin: '5px 0 0 0', fontWeight: '500' },
   roleBadge: { fontSize: '11px', background: 'rgba(52, 152, 219, 0.2)', color: '#3498db', padding: '3px 10px', borderRadius: '50px', alignSelf: 'flex-start', marginBottom: '30px', fontWeight: 'bold' },
@@ -414,7 +491,7 @@ const styles = {
   headerRight: { fontSize: '14px', fontWeight: 'bold', color: '#64748b', background: '#e2e8f0', padding: '5px 15px', borderRadius: '20px' },
   
   statsContainer: { display: 'flex', gap: '20px', marginBottom: '30px' },
-  statCard: { flex: 1, background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' },
+  statCard: { flex: 1, background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(45, 40, 40, 0.02)' },
   statNumber: { fontSize: '28px', fontWeight: 'bold', marginTop: '10px', color: '#1e293b' },
   
   workspace: { display: 'flex', gap: '25px', alignItems: 'flex-start', flexWrap: 'wrap' },

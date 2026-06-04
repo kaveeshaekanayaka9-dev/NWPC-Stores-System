@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Overview from './Overview';
+import { Bar, Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+
+
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   // 🔄 Active Tab එකට 'VERIFIED_LIST' එකතු කළා
-  const [activeTab, setActiveTab] = useState('USERS');
+ const [activeTab, setActiveTab] = useState('USERS');
 
   // Data States
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -18,6 +25,19 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   const [rackNumber, setRackNumber] = useState('');
   const [shelfNumber, setShelfNumber] = useState('');
   const [reapprovalLocations, setReapprovalLocations] = useState({});
+  // AdminDashboard.jsx එකේ ඉහළින්ම මෙය එකතු කරන්න
+const [chartData, setChartData] = useState({ rackStats: [], statusStats: [] });
+  
+
+
+
+  useEffect(() => {
+    const fetchChartData = async () => {
+        const res = await axios.get('http://localhost:5000/api/reports/chart-data');
+        setChartData(res.data);
+    };
+    fetchChartData();
+}, []);
 
   useEffect(() => {
     loadAdminData();
@@ -62,6 +82,9 @@ const res = await axios.put(`http://localhost:5000/api/files/approve-file/${file
     alert("🛑 ක්‍රියාවලිය අසාර්ථකයි. නැවත උත්සාහ කරන්න.");
   }
 };
+
+
+
 
 const handleFileApproval = async (fileId) => {
   try {
@@ -148,6 +171,8 @@ const handleReapproval = async (fileId) => {
     }
   };
 
+  
+
   // 🗄️ රාක්ක වෙන් කර අවසන් වූ (VERIFIED) ෆයිල් ටික විතරක් වෙන් කර ගැනීම
   const verifiedFiles = allFiles.filter(f => f.isVerified === 'VERIFIED');
 
@@ -167,6 +192,9 @@ const handleReapproval = async (fileId) => {
         <span style={styles.badge}>Control Center</span>
 
         <nav style={styles.nav}>
+
+          <div style={{ ...styles.navItem, ...(activeTab === 'OVERVIEW' && styles.activeNav) }} onClick={() => setActiveTab('OVERVIEW')}>📊 Quick Overview
+</div>          
 
           <div style={{ ...styles.navItem, ...(activeTab === 'USERS' && styles.activeNav) }} onClick={() => setActiveTab('USERS')}>🛡️ User Management</div>
           <div style={{ ...styles.navItem, ...(activeTab === 'QUEUE' && styles.activeNav) }} onClick={() => setActiveTab('QUEUE')}>⏳ Verification Queue</div>
@@ -221,6 +249,71 @@ const handleReapproval = async (fileId) => {
           <h2>Admin Control Dashboard</h2>
           <div style={styles.yearTag}>Year: 2026</div>
         </header>
+
+        
+{activeTab === 'OVERVIEW' && (
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        
+        
+        {/* Bar Chart */}
+<div style={styles.chartContainer}>
+    <Bar 
+        data={{
+            labels: chartData.rackStats.map(item => item._id.rack),
+            datasets: [{
+                label: 'Files Count',
+                data: chartData.rackStats.map(item => item.count),
+                backgroundColor: '#0a54ca'
+            }]
+        }}
+        options={{ 
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Files Distribution per Rack', // මාතෘකාව 1
+                    font: { size: 18 }
+                }
+            }
+        }}
+    />
+</div>
+
+{/* Pie Chart */}
+   
+<div style={styles.chartContainer}>
+    <Pie 
+    data={{
+        labels: chartData.statusStats.map(item => item._id), 
+        datasets: [{
+            label: 'Verification Status',
+            data: chartData.statusStats.map(item => item.count),
+            backgroundColor: [
+                '#10b981', // Verified (කොළ)
+                '#f59e0b', // Pending (කහ)
+                '#ef4444'  // Rejected (රතු)
+            ]
+        }]
+    }}
+    options={{ 
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Verification Status Overview',
+                font: { size: 18 }
+            },
+            legend: {
+                position: 'bottom' // ලේබල් ටික චාර්ට් එකට පහළින් පෙන්වීමට
+            }
+        }
+    }}
+/>
+</div>
+      </div>
+    )}
+      
+    
 
         {/* 1. USER MANAGEMENT TAB */}
         {activeTab === 'USERS' && (
@@ -284,7 +377,9 @@ const handleReapproval = async (fileId) => {
 </tbody>
             </table>
           </div>
-        )}
+        )};
+
+        
 
         {/* 2. VERIFICATION QUEUE */}
        {/* 2. VERIFICATION QUEUE */}
@@ -333,7 +428,7 @@ const handleReapproval = async (fileId) => {
                   {/* ෆයිල් විස්තර */}
                   <td style={styles.proTd}>
                     <div style={{ fontWeight: '700', color: '#101011', fontSize: '13px', letterSpacing: '0.5px' }}>{f.fileNumber}</div>
-                    <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px', lineHeight: '1.4' }}>{f.fileName}</div>
+                    <div style={{ color: '#64748b', fontSize: '15px', marginTop: '4px', lineHeight: '1.4' }}>{f.fileName}</div>
                   </td>
                   
                   {/* වර්ගීකරණය */}
@@ -343,7 +438,7 @@ const handleReapproval = async (fileId) => {
                   
                   {/* නිලධාරියා */}
                   <td style={styles.proTd}>
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' , fontSize: '15px' }}>
     {(() => {
       // 1. කිසිදු දත්තයක් නොමැති නම්
       if (!f.submittedBy) {
@@ -372,7 +467,7 @@ const handleReapproval = async (fileId) => {
 </td>
                   
                   {/* ඩිජිටල් ලිපිය */}
-                  <td style={{ ...styles.proTd, textAlign: 'center' }}>
+                  <td style={{ ...styles.proTd, textAlign: 'center' , fontSize:'15px'}}>
                     {f.fileUrl ? (
                       <a 
                         href={`http://localhost:5000${f.fileUrl}`} 
@@ -392,8 +487,8 @@ const handleReapproval = async (fileId) => {
                     <div style={{ display: 'inline-flex', gap: '12px' }}>
                       <button 
                         style={{
-                          ...styles.proSelectBtn, 
-                          background: isSelected ? '#1d52ee' : '#3b82f6',
+                          ...styles.proSelectBtn, borderRadius: '5px',backgroundColor: '#3d33f9' , color:'#fff',
+                          background: isSelected ? '#1d52ee' : '#196cf1',
                           boxShadow: isSelected ? '0 3px 8px rgba(16,185,129,0.25)' : '0 3px 8px rgba(59,130,246,0.15)'
                         }} 
                         onClick={() => {
@@ -404,7 +499,7 @@ const handleReapproval = async (fileId) => {
                       >
                         {isSelected ? 'Selected 🎯' : 'Select 🗄️'}
                       </button>
-                      <button style={styles.proRejectBtn} onClick={() => handleRejectFile(f._id)}>
+                      <button style={{ ...styles.proRejectBtn, borderRadius: '5px',backgroundColor: '#f31515', color: '#fff' }} onClick={() => handleRejectFile(f._id)}>
                         Reject ✕
                       </button>
                     </div>
@@ -422,7 +517,7 @@ const handleReapproval = async (fileId) => {
       style={{ 
         ...styles.card, 
         width: '100%', 
-        background: selectedFileId ? '#83d9f9' : '#f8fafc', 
+        background: selectedFileId ? '#72ef72' : '#f8fafc', 
         padding: '30px', 
         border: selectedFileId ? '1px solid #10b981' : '1px solid #6ff36f', 
         boxSizing: 'border-box',
@@ -457,7 +552,7 @@ const handleReapproval = async (fileId) => {
           </div>
           
           {/* Action Button */}
-          <button type="submit" style={{ ...styles.newSubmitBtn, alignSelf: 'flex-start', padding: '14px 35px',color :'#090909' }}>
+          <button type="submit" style={{ ...styles.newSubmitBtn, alignSelf: 'flex-start', padding: '14px 35px',color :'#090909', backgroundColor: '#6773fa', borderRadius: '8px', fontWeight: 'bold' }}>
             Verify & Confirm Location Mapping 🚀
           </button>
         </form>
@@ -530,13 +625,13 @@ const handleReapproval = async (fileId) => {
               )}
                
               <button
-                style={{ ...styles.reapprovalActionBtn, ...styles.reapprovalApproveBtn, padding:'6px 12px', backgroundColor: '#1e4eed',borderRadius:'6px',color:'#f8fafc',width:'fit-content' }}
+                style={{ ...styles.reapprovalActionBtn, ...styles.reapprovalApproveBtn, padding:'6px 12px', backgroundColor: '#1e4eed',borderRadius:'6px',color:'#f8fafc',width:'fit-content'  }}
                 onClick={() => handleReapproval(f._id)}
               >
                 Re-approve
               </button>
               <button
-                style={{ ...styles.reapprovalActionBtn, ...styles.reapprovalRejectBtn, padding:'6px 12px', backgroundColor: '#dc2626',color:'#f8fafc',borderRadius:'6px' , width:'fit-content'}}
+                style={{ ...styles.reapprovalActionBtn, ...styles.reapprovalRejectBtn, padding:'6px 12px', backgroundColor: '#dc2626',color:'#f8fafc',borderRadius:'6px' , width:'fit-content' , gap:'12px'}}
                 onClick={() => handleRejectFile(f._id)}
               >
                 Reject
@@ -671,7 +766,7 @@ const handleReapproval = async (fileId) => {
 // CSS-IN-JS STYLES
 const styles = {
   container: { display: 'flex', width: '100vw', minHeight: '100vh', background: '#f8fafc', color: '#334155', fontFamily: "'Segoe UI', sans-serif" },
-  sidebar: { width: '260px', background: '#0f172a', color: '#fff', padding: '30px 20px', display: 'flex', flexDirection: 'column' },
+  sidebar: { textAlign: 'left', width: '260px', background: '#0f172a', color: '#fff', padding: '30px 20px', display: 'flex', flexDirection: 'column' , },
   brand: { fontSize: '20px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '15px', letterSpacing: '1px' },
   adminName: { fontSize: '15px', margin: '5px 0' },
   badge: { fontSize: '11px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '4px 12px', borderRadius: '50px', alignSelf: 'flex-start', fontWeight: 'bold', marginBottom: '35px' },
@@ -729,6 +824,8 @@ proTd: {
   // ...
 },
 
+
+
 // Styles Object එක තුළ
 proWideTable: { 
   width: '100%', 
@@ -740,7 +837,18 @@ tableCard: {
   width: '100%',      // පවතින ඉඩ ප්‍රමාණයට පමණක් සීමා වේ
   maxWidth: '100%',   // තිරයෙන් පිටතට යාම වළක්වයි
   overflowX: 'auto'   // Table එක පළල් නම් Table එක ඇතුළත පමණක් Scroll වේ
-}
+},
+
+chartContainer: {
+    width: '45%',
+    height: '400px', // මෙය අනිවාර්යයි
+    padding: '20px',
+    background: '#ffffff',
+    borderRadius: '16px',
+    boxShadow: '0 8px 16px -2px rgba(0,0,0,0.1)'
+  },
+  
+  
 
 
 };
