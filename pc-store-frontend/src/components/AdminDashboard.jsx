@@ -21,7 +21,7 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Rack Input States (For Assignment)
-  const [selectedFileId, setSelectedFileId] = useState(null);
+  const [selectedFileId, setSelectedFileId] = useState(null); 
   const [rackNumber, setRackNumber] = useState('');
   const [shelfNumber, setShelfNumber] = useState('');
   const [reapprovalLocations, setReapprovalLocations] = useState({});

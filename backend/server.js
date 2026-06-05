@@ -11,6 +11,7 @@ const reportRoutes = require('./routes/reportRoutes');
 
 // Models
 const File = require('./models/File'); 
+const AuditLog = require('./models/AuditLog'); 
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes); 
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
+
 
 // Rack logic route
 app.get('/api/racks/:rackNumber', async (req, res) => {
@@ -71,6 +73,17 @@ app.put('/api/files/:id', async (req, res) => {
         res.json({ message: "File updated and sent for re-approval", updatedFile });
     } catch (err) {
         res.status(500).json({ error: "Update failed" });
+    }
+});
+
+// Backend: routes/auditRoutes.js හෝ server.js
+app.get('/api/audit-logs/:email', async (req, res) => {
+    try {
+        const logs = await AuditLog.find({ officerId: req.params.email }).sort({ timestamp: -1 });
+        console.log("Database එකෙන් ලැබුණු ලොග්ස්:", logs); // මෙය ටර්මිනලයේ බලන්න
+        res.status(200).json(logs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

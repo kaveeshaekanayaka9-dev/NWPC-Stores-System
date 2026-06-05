@@ -20,6 +20,8 @@ const [newFile, setNewFile] = useState(null);
 const [officerData, setOfficerData] = useState({});
 const [selectedFiles, setSelectedFiles] = useState([]);
 const [allSelected, setAllSelected] = useState(false);
+ const [historyLogs, setHistoryLogs] = useState([]);
+
 
 // Officer ලැයිස්තුව ලබාගැනීමට useEffect එකක්
 useEffect(() => {
@@ -205,6 +207,24 @@ const handleDelete = async (fileId) => {
     setStats({ total, pending, verified });
   };
 
+ 
+// History data fetch කරන function එක
+const fetchHistory = async () => {
+  try {
+    const res = await axios.get(`http://localhost:5000/api/audit-logs/${user.email}`);
+    setHistoryLogs(res.data);
+  } catch (err) {
+    console.error("History fetch failed", err);
+  }
+};
+
+// activeTab 'HISTORY' වූ විට පමණක් මෙය කැඳවන්න
+useEffect(() => {
+  if (activeTab === 'HISTORY') {
+    fetchHistory();
+  }
+}, [activeTab]);
+
   return (
     <div style={styles.dashboardContainer}>
       
@@ -243,7 +263,13 @@ const handleDelete = async (fileId) => {
             🗄️ Rack Locator
           </div>
 
-          <div style={styles.navItem}>⏳ Transaction History</div>
+         
+<div 
+  style={{...styles.navItemLink, ...(activeTab === 'HISTORY' && styles.activeNav)}}
+  onClick={() => setActiveTab('HISTORY')}
+>
+  ⏳ Transaction History
+</div>
         </nav>
 
         <button 
@@ -357,7 +383,7 @@ const handleDelete = async (fileId) => {
         <td>{file.fileName}</td>
         <td><span style={styles.catBadge}>{file.category}</span></td>
         <td>
-          <span style={{ ...styles.statusBadge, background: file.isVerified === 'VERIFIED' ? '#e8f5e9' : '#fffde7' }}>
+          <span style={{ ...styles.statusBadge, background: file.isVerified === 'VERIFIED' ? '#9bf693' : '#f8aa9e' }}>
             {file.isVerified}
           </span>
         </td>
@@ -444,6 +470,46 @@ const handleDelete = async (fileId) => {
             </div>
           </div>
         )}
+
+          {activeTab === 'HISTORY' && (
+  <div style={styles.tableCard}>
+    <h3>📜 Transaction History (ඔබේ ක්‍රියාකාරකම්)</h3>
+    <p style={styles.cardDesc}>ඔබ සිදු කළ පසුගිය සියලුම ගනුදෙනු ලැයිස්තුව.</p>
+    
+    <div style={styles.tableWrapper}>
+      <table style={styles.table}>
+        <thead>
+          <tr style={styles.thRow}>
+            <th>Date/Time</th>
+            <th>Action</th>
+            <th>File Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          {historyLogs.length === 0 ? (
+            <tr><td colSpan="3" style={styles.emptyTd}>කිසිදු වාර්තාවක් හමු නොවීය.</td></tr>
+          ) : (
+            historyLogs.map((log) => (
+              <tr key={log._id} style={styles.trRow}>
+                <td>{new Date(log.timestamp).toLocaleString()}</td>
+                <td>
+                  <span style={{ 
+                    padding: '4px 8px', borderRadius: '4px', fontSize: '12px', 
+                    background: log.action.includes('DELETE') ? '#fee2e2' : '#dcfce7' 
+                  }}>
+                    {log.action}
+                  </span>
+                </td>
+                <td>{log.fileName}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
+
         {isModalOpen && (
   <div style={styles.modalOverlay}>
     <div style={styles.modalContent}>

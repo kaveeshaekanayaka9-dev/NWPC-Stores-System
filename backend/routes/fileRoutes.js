@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs'); 
 const File = require('../models/File');
+const AuditLog = require('../models/AuditLog');
 
 // 📂 uploads ෆෝල්ඩර් එක නැත්නම් සර්වර් එක ස්වයංක්‍රීයවම ඒක සාදයි
 const uploadDir = 'uploads/';
@@ -55,6 +56,30 @@ router.post('/add', upload.single('attachedFile'), async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// routes/fileRoutes.js හෝ fileController.js තුළ
+router.post('/add', async (req, res) => {
+    try {
+        // 1. ෆයිල් එක Save කරන්න
+        const newFile = await File.create(req.body);
+
+        // 2. හරියටම මෙතනට ලොග් එක දාන්න
+        await AuditLog.create({
+            officerId: req.body.submittedBy, // මෙතැනට පද්ධතියේ භාවිතා වන නිවැරදි field එක දෙන්න
+            action: "CREATED_FILE",
+            fileName: req.body.fileName,
+            timestamp: new Date()
+        });
+
+        // 3. සාර්ථක බව දැනුම් දෙන්න
+        res.status(201).json({ message: "File created successfully", file: newFile });
+
+    } catch (err) {
+        console.error("Error creating file:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 
 
