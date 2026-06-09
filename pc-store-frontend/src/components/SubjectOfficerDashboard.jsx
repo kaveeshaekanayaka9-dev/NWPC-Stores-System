@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHome }) => {
   const [activeTab, setActiveTab] = useState('DASHBOARD'); 
@@ -56,20 +57,46 @@ const toggleAll = () => {
   setAllSelected(!allSelected);
 };
 
-const handleBulkDelete = async () => {
-  if (selectedFiles.length === 0) return alert("කරුණාකර අවම වශයෙන් එක් ෆයිල් එකක් හෝ තෝරන්න.");
-  if (window.confirm(`තෝරාගත් ෆයිල්ස් ${selectedFiles.length} මකා දැමීමට අවශ්‍යද?`)) {
-    // Backend API call එක මෙතනට ලියන්න
-    console.log("Deleting IDs:", selectedFiles);
+const exportToExcel = () => {
+  // කුමන දත්තද බාගත කළ යුත්තේ? (උදා: myFiles)
+  const worksheet = XLSX.utils.json_to_sheet(myFiles);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "MyFiles");
+  
+  // ෆයිල් එක Save කිරීම
+  XLSX.writeFile(workbook, "My_Files_Report.xlsx");
+  
+  // Audit log එකට එක් කිරීම (Optional)
+  axios.post('http://localhost:5000/api/audit-logs/add', {
+    officerId: user.email,
+    action: "EXPORTED_TO_EXCEL",
+    fileName: "My_Files_Report.xlsx",
+    timestamp: new Date()
+  });
+};
+
+
+
+
+// නිවැරදි ආකාරය:
+const handleWhatsAppShare = async (file) => { // මෙතන 'async' අනිවාර්යයි
+  const message = `PC-Store Update: ${file.fileName} - Status: ${file.isVerified}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  
+  try {
+    await axios.post('http://localhost:5000/api/audit-logs/add', {
+      officerId: user.email,
+      action: "SHARED_FILE",
+      fileName: file.fileName,
+      timestamp: new Date()
+    });
+  } catch (err) {
+    console.error("History log update failed", err);
   }
 };
 
-const handleWhatsAppShare = (file) => {
-  const message = `PC-Store Update: ${file.fileName} - Status: ${file.status}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-};
 
-const handleDownload = (elementId) => {
+const handleDownload = async (elementId) => {
   const input = document.getElementById(elementId);
   
   if (!input) {
@@ -84,7 +111,20 @@ const handleDownload = (elementId) => {
     pdf.addImage(imgData, 'PNG', 10, 10, 280, 20); 
     pdf.save(`file_${elementId}.pdf`);
   });
+
+   try {
+    await axios.post('http://localhost:5000/api/audit-logs/add', {
+      officerId: user.email,
+      action: "DOWNLOADED_FILE",
+      fileName: file.fileName,
+      timestamp: new Date()
+    });
+  } catch (err) {
+    console.error("History log update failed", err);
+  }
 };
+
+
 
    // Add these to your SubjectOfficerDashboard component
 const handleView = (file) => {
@@ -131,14 +171,29 @@ const handleUpdateSubmit = async () => {
   }
 };
 
-const handleDelete = async (fileId) => {
-  if (window.confirm("මෙම ලිපිගොනුව මකා දැමීමට අවශ්‍යද?")) {
+const handleBulkDelete = async () => {
+  if (selectedFiles.length === 0) return alert("කරුණාකර අවම වශයෙන් එක් ෆයිල් එකක් හෝ තෝරන්න.");
+  
+  if (window.confirm(`තෝරාගත් ෆයිල්ස් ${selectedFiles.length} මකා දැමීමට අවශ්‍යද?`)) {
     try {
-      await axios.delete(`http://localhost:5000/api/files/${fileId}`);
-      // Refresh the list after delete
+      // ලූපයක් මගින් එකින් එක Delete කර Log කිරීම
+      for (const fileId of selectedFiles) {
+        const file = myFiles.find(f => f._id === fileId);
+        await axios.delete(`http://localhost:5000/api/files/${fileId}`);
+        
+        await axios.post('http://localhost:5000/api/audit-logs/add', {
+          officerId: user.email,
+          action: "DELETED_FILE",
+          fileName: file ? file.fileName : "Unknown File",
+          timestamp: new Date()
+        });
+      }
+      
+      alert("සාර්ථකව මකා දමන ලදී.");
+      setSelectedFiles([]); // Selection clear කරන්න
       fetchMyFiles(); 
     } catch (err) {
-      alert("ලිපිගොනුව මැකීමේදී දෝෂයක් සිදු විය.");
+      alert("මැකීමේදී දෝෂයක් සිදු විය.");
     }
   }
 };
@@ -337,8 +392,8 @@ useEffect(() => {
   VIEW
 </button>
     <button style={styles.editBtn} onClick={ handleEditClick}>EDITE</button>
-    <button style={styles.deleteBtn} onClick={handleBulkDelete}>🗑️ DELETE</button>
-    <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={handleWhatsAppShare}>📱 SHARE</button>
+    <button style={styles.deleteBtn} onClick={handleBulkDelete}> DELETE</button>
+    <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={handleWhatsAppShare}> SHARE</button>
      <button 
   style={{ ...styles.viewBtn, background: '#f44336', color: 'white' }} 
   onClick={() => {
@@ -350,7 +405,15 @@ useEffect(() => {
   }}
 >
   DOWNLOAD
-</button>  
+</button> 
+
+    <button 
+  style={{ ...styles.viewBtn, background: '#27ae60', marginLeft: '10px' }} 
+  onClick={exportToExcel}
+>
+   Export to Excel
+</button>
+
   </div>
 </div>
                 

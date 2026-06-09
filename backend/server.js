@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // වරක් පමණක් තබන්න
+const cors = require('cors'); 
 const dotenv = require('dotenv');
 
 // Routes imports

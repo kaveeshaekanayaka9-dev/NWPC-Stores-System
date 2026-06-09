@@ -29,80 +29,40 @@ const upload = multer({ storage: storage });
 // ==========================================
 router.post('/add', upload.single('attachedFile'), async (req, res) => {
   try {
-    const { fileNumber, fileName, category, description, submittedBy } = req.body;
+    const { fileNumber, fileName, category, description, rackNumber, shelfNumber, submittedBy } = req.body;
     
-    // වැදගත්ම දේ: submittedBy හිස් නම් හෝ Invalid නම් එය අතින් හසුරුවන්න
-    if (!submittedBy) {
-      return res.status(400).json({ message: "SubmittedBy Officer ID is required" });
+    // 1. Validation
+    if (!submittedBy) return res.status(400).json({ message: "SubmittedBy ID is required" });
+    if (rackNumber > 5 || shelfNumber > 8) {
+      return res.status(400).json({ error: "Invalid location! Rack 1-5 & Shelf 1-8 allowed." });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    // 2. File URL එක සැකසීම
+    const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const newFile = new File({
-      fileNumber,
-      fileName,
-      category,
-      description,
-      submittedBy: submittedBy, // මෙතනදී Frontend එකෙන් හරියටම User ID එකම එවන බව සහතික කරගන්න
-      fileUrl,
-      isVerified: 'PENDING',
-      needsReapproval: false
+    // 3. File එක Save කිරීම
+    const newFile = await File.create({
+      fileNumber, fileName, category, description, rackNumber, shelfNumber, 
+      submittedBy, fileUrl, isVerified: 'PENDING'
     });
 
-    await newFile.save();
-    res.status(201).json({ message: "සාර්ථකයි!" });
+    // 4. Audit Log එක (මෙය අනිවාර්යයි)
+    await AuditLog.create({
+      officerId: submittedBy,
+      action: "CREATED_FILE",
+      fileName: fileName,
+      timestamp: new Date()
+    });
+
+    res.status(201).json({ message: "සාර්ථකයි!", file: newFile });
   } catch (err) {
-    console.error("❌ Backend Error:", err); 
+    console.error("❌ Error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// routes/fileRoutes.js හෝ fileController.js තුළ
-router.post('/add', async (req, res) => {
-    try {
-        // 1. ෆයිල් එක Save කරන්න
-        const newFile = await File.create(req.body);
 
-        // 2. හරියටම මෙතනට ලොග් එක දාන්න
-        await AuditLog.create({
-            officerId: req.body.submittedBy, // මෙතැනට පද්ධතියේ භාවිතා වන නිවැරදි field එක දෙන්න
-            action: "CREATED_FILE",
-            fileName: req.body.fileName,
-            timestamp: new Date()
-        });
 
-        // 3. සාර්ථක බව දැනුම් දෙන්න
-        res.status(201).json({ message: "File created successfully", file: newFile });
-
-    } catch (err) {
-        console.error("Error creating file:", err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-router.post('/add', async (req, res) => {
-    const { rackNumber, shelfNumber } = req.body;
-
-    // සීමාවන් නිර්වචනය කිරීම
-    const MAX_RACKS = 5;
-    const MAX_SHELVES = 8;
-
-    // 1. පරීක්ෂා කිරීම
-    if (rackNumber > MAX_RACKS || shelfNumber > MAX_SHELVES) {
-        return res.status(400).json({ 
-            error: `Invalid location! Only ${MAX_RACKS} racks and ${MAX_SHELVES} shelves are available.` 
-        });
-    }
-
-    // 2. පරීක්ෂාව සාර්ථක නම් පමණක් පද්ධතියට දත්ත ඇතුළු කරන්න
-    try {
-        const newFile = await File.create(req.body);
-        // ... (Audit Log එක මෙතන දමන්න)
-        res.status(201).json(newFile);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
 
 
@@ -237,16 +197,8 @@ router.put('/approve-file/:id', async (req, res) => {
     }
 });
 
-// fileRoutes.js තුළ මෙම රවුට් එක තිබිය යුතුමයි
-router.delete('/:id', async (req, res) => {
-  try {
-    const deletedFile = await File.findByIdAndDelete(req.params.id);
-    if (!deletedFile) return res.status(404).json({ message: "File not found" });
-    res.status(200).json({ message: "File deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
+
 
 // ==========================================
 // 5. ✕ ලිපිගොනුව ප්‍රතික්ෂේප කිරීම (PUT)
@@ -267,6 +219,24 @@ router.put('/reject-file/:id', async (req, res) => {
   } catch (err) {
     console.error("❌ File Rejection Error:", err);
     res.status(500).json({ message: "ප්‍රතික්ෂේප කිරීම අසාර්ථකයි.", error: err.message });
+  }
+});
+router.delete('/:id', async (req, res) => {
+  try {
+    const file = await File.findByIdAndDelete(req.params.id);
+    if (!file) return res.status(404).json({ message: "File not found" });
+
+    // මෙතන අනිවාර්යයෙන්ම Log එකක් දාන්න
+    await AuditLog.create({
+        officerId: file.submittedBy, // කුමන නිලධාරියාගේ ෆයිල් එකද?
+        action: "DELETED_FILE",
+        fileName: file.fileName,
+        timestamp: new Date()
+    });
+
+    res.status(200).json({ message: "File deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
