@@ -80,7 +80,29 @@ router.post('/add', async (req, res) => {
     }
 });
 
+router.post('/add', async (req, res) => {
+    const { rackNumber, shelfNumber } = req.body;
 
+    // සීමාවන් නිර්වචනය කිරීම
+    const MAX_RACKS = 5;
+    const MAX_SHELVES = 8;
+
+    // 1. පරීක්ෂා කිරීම
+    if (rackNumber > MAX_RACKS || shelfNumber > MAX_SHELVES) {
+        return res.status(400).json({ 
+            error: `Invalid location! Only ${MAX_RACKS} racks and ${MAX_SHELVES} shelves are available.` 
+        });
+    }
+
+    // 2. පරීක්ෂාව සාර්ථක නම් පමණක් පද්ධතියට දත්ත ඇතුළු කරන්න
+    try {
+        const newFile = await File.create(req.body);
+        // ... (Audit Log එක මෙතන දමන්න)
+        res.status(201).json(newFile);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 
 

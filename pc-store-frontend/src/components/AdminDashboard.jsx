@@ -539,17 +539,33 @@ const handleReapproval = async (fileId) => {
           </div>
           
           {/* Dual Column Inputs */}
-          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={styles.newLabel}>Rack Number (රාක්ක අංකය)</label>
-              <input type="text" style={styles.newInput} placeholder="e.g., Rack 03" value={rackNumber} onChange={(e) => setRackNumber(e.target.value)} required />
-            </div>
-            
-            <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={styles.newLabel}>Shelf Number (තට්ටු අංකය)</label>
-              <input type="text" style={styles.newInput} placeholder="e.g., Shelf 02" value={shelfNumber} onChange={(e) => setShelfNumber(e.target.value)} required />
-            </div>
-          </div>
+          {/* Rack Number Dropdown */}
+<div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+  <label style={styles.newLabel}>Rack Number (රාක්ක අංකය)</label>
+  <select 
+    style={styles.newInput} 
+    value={rackNumber} 
+    onChange={(e) => setRackNumber(e.target.value)} 
+    required
+  >
+    <option value="">Select Rack (1-5)</option>
+    {[1, 2, 3, 4, 5].map(num => <option key={num} value={num}>{`Rack ${num}`}</option>)}
+  </select>
+</div>
+
+{/* Shelf Number Dropdown */}
+<div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+  <label style={styles.newLabel}>Shelf Number (තට්ටු අංකය)</label>
+  <select 
+    style={styles.newInput} 
+    value={shelfNumber} 
+    onChange={(e) => setShelfNumber(e.target.value)} 
+    required
+  >
+    <option value="">Select Shelf (1-8)</option>
+    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => <option key={num} value={num}>{`Shelf ${num}`}</option>)}
+  </select>
+</div>
           
           {/* Action Button */}
           <button type="submit" style={{ ...styles.newSubmitBtn, alignSelf: 'flex-start', padding: '14px 35px',color :'#090909', backgroundColor: '#6773fa', borderRadius: '8px', fontWeight: 'bold' }}>
