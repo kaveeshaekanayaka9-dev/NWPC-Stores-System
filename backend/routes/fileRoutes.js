@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs'); 
 const File = require('../models/File');
 const AuditLog = require('../models/AuditLog');
+const Notification = require('../models/Notification');
 
 // 📂 uploads ෆෝල්ඩර් එක නැත්නම් සර්වර් එක ස්වයංක්‍රීයවම ඒක සාදයි
 const uploadDir = 'uploads/';
@@ -52,6 +53,15 @@ router.post('/add', upload.single('attachedFile'), async (req, res) => {
       action: "CREATED_FILE",
       fileName: fileName,
       timestamp: new Date()
+    });
+
+    // 5. Notification එක සාදා සේව් කිරීම
+    await Notification.create({
+      recipientEmail: submittedBy,
+      message: `Your file "${fileName}" (No: ${fileNumber}) was successfully submitted and is pending admin approval.`,
+      type: 'FILE_SUBMITTED',
+      fileNumber,
+      fileName
     });
 
     res.status(201).json({ message: "සාර්ථකයි!", file: newFile });
@@ -138,6 +148,15 @@ router.put('/verify-file/:id', async (req, res) => {
       return res.status(404).json({ message: "එම ලිපිගොනුව පද්ධතියේ සොයාගත නොහැක." });
     }
 
+    // Notification එක සාදා සේව් කිරීම
+    await Notification.create({
+      recipientEmail: updatedFile.submittedBy,
+      message: `Your file "${updatedFile.fileName}" (No: ${updatedFile.fileNumber}) has been approved and assigned to Rack ${rackNumber}, Shelf ${shelfNumber}.`,
+      type: 'FILE_APPROVED',
+      fileNumber: updatedFile.fileNumber,
+      fileName: updatedFile.fileName
+    });
+
     res.status(200).json({ message: "ලිපිගොනුව සාර්ථකව රාක්ක ගත කළා!", updatedFile });
   } catch (err) {
     console.error("❌ File Verification Error:", err);
@@ -180,6 +199,15 @@ router.put('/update/:id', upload.single('file'), async (req, res) => {
       return res.status(404).json({ message: "File not found" });
     }
 
+    // Notification එක සාදා සේව් කිරීම
+    await Notification.create({
+      recipientEmail: updatedFile.submittedBy,
+      message: `Your file "${updatedFile.fileName}" (No: ${updatedFile.fileNumber}) was updated and sent for admin re-approval.`,
+      type: 'FILE_SUBMITTED',
+      fileNumber: updatedFile.fileNumber,
+      fileName: updatedFile.fileName
+    });
+
     res.status(200).json({ message: "File updated and sent for re-approval", updatedFile });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -190,8 +218,21 @@ router.put('/update/:id', upload.single('file'), async (req, res) => {
 router.put('/approve-file/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        await File.findByIdAndUpdate(id, { isVerified: 'VERIFIED', needsReapproval: false });
-        res.status(200).json({ message: "File approved successfully!" });
+        const updatedFile = await File.findByIdAndUpdate(
+            id, 
+            { isVerified: 'VERIFIED', needsReapproval: false },
+            { new: true }
+        );
+        if (updatedFile) {
+            await Notification.create({
+              recipientEmail: updatedFile.submittedBy,
+              message: `Your file "${updatedFile.fileName}" (No: ${updatedFile.fileNumber}) has been approved by the admin.`,
+              type: 'FILE_APPROVED',
+              fileNumber: updatedFile.fileNumber,
+              fileName: updatedFile.fileName
+            });
+        }
+        res.status(200).json({ message: "File approved successfully!", updatedFile });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -214,6 +255,15 @@ router.put('/reject-file/:id', async (req, res) => {
     if (!updatedFile) {
       return res.status(404).json({ message: "එම ලිපිගොනුව පද්ධතියේ සොයාගත නොහැක." });
     }
+
+    // Notification එක සාදා සේව් කිරීම
+    await Notification.create({
+      recipientEmail: updatedFile.submittedBy,
+      message: `Your file "${updatedFile.fileName}" (No: ${updatedFile.fileNumber}) has been rejected by the admin.`,
+      type: 'FILE_REJECTED',
+      fileNumber: updatedFile.fileNumber,
+      fileName: updatedFile.fileName
+    });
 
     res.status(200).json({ message: "ලිපිගොනුව ප්‍රතික්ෂේප කරන ලදී.", updatedFile });
   } catch (err) {

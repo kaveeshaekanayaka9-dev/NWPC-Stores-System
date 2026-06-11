@@ -12,7 +12,9 @@ const UserSchema = new mongoose.Schema({
   isAdminApproved: { 
     type: Boolean, 
     default: false // 👈 මෙන්න මේක අනිවාර්යයෙන්ම false වෙන්න ඕනේ!
-  }
+  },
+  resetOTP: { type: String },
+  resetOTPExpires: { type: Date }
 }, { timestamps: true });
 
 // 🚨 'users' කියන නම නිවැරදිව ලබාදීම (Compass එකේ තියෙන නමමයි)

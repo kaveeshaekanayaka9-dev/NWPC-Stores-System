@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 // 🎯 App.jsx එකෙන් එන Props නිවැරදිවම මෙතනට ලබා දී ඇත (goToRegister, goToBack)
-const Login = ({ onLoginSuccess, goToRegister, goToBack }) => {
+const Login = ({ onLoginSuccess, goToRegister, goToBack, goToForgotPassword }) => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
@@ -72,6 +72,9 @@ const Login = ({ onLoginSuccess, goToRegister, goToBack }) => {
           {/* 🎯 App.jsx එකට ගැලපෙන සේ onClick={goToRegister} ලෙස නිවැරදි කර ඇත */}
           <p style={styles.footerText}>
             පද්ධතියේ ගිණුමක් නොමැතිද? <span onClick={goToRegister} style={styles.link}>මෙහි ලියාපදිංචි වන්න</span>
+          </p>
+          <p style={{ ...styles.footerText, marginTop: '10px' }}>
+            මුරපදය මතක නැතිද? <span onClick={goToForgotPassword} style={{ ...styles.link, color: '#ffff2b' }}>මුරපදය වෙනස් කරන්න (OTP)</span>
           </p>
         </div>
       </div>

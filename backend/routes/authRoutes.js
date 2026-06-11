@@ -4,22 +4,103 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // 👈 User Model එක
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.mailtrap.io',
+    port: process.env.SMTP_PORT || 2525,
+    auth: {
+        user: process.env.SMTP_USER || '',
+        pass: process.env.SMTP_PASS || ''
+    }
+});
 
 
 router.post('/forgot-password', async (req, res) => {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "පරිශීලකයා හමු නොවීය." });
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: "පරිශීලකයා හමු නොවීය." });
 
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // පැය 1ක්
-    await user.save();
+        // Generate a 6-digit OTP code
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        user.resetOTP = otpCode;
+        user.resetOTPExpires = Date.now() + 600000; // Valid for 10 minutes
+        await user.save();
 
-    // ඊමේල් එක යැවීම (Nodemailer භාවිතා කරන්න)
-    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
-    console.log("Reset Link:", resetUrl); // මෙය පරීක්ෂා කිරීමට පමණි
-    res.json({ message: "මුරපදය වෙනස් කිරීමේ ලින්ක් එක ඊමේල් කරන ලදී." });
+        console.log(`\n📨 [OTP Debug] Code for ${email} is: ${otpCode}\n`);
+
+        let emailSent = false;
+        if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+            try {
+                const mailOptions = {
+                    from: `"NWPC Stores" <no-reply@nw.gov.lk>`,
+                    to: user.email,
+                    subject: 'Password Reset OTP - NWPC Stores',
+                    text: `Your OTP code for password reset is: ${otpCode}. It is valid for 10 minutes.`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 5px; max-width: 600px;">
+                            <h2 style="color: #3498db; margin-top: 0;">NWPC Stores Password Reset</h2>
+                            <p>You requested a password reset. Use the following One-Time Password (OTP) to complete the reset process:</p>
+                            <div style="font-size: 28px; font-weight: bold; background: #f4f6f9; padding: 15px; text-align: center; border-radius: 6px; letter-spacing: 4px; color: #2c3e50; margin: 20px 0;">
+                                ${otpCode}
+                            </div>
+                            <p style="color: #e74c3c; font-size: 13px; margin-top: 15px;">Note: This OTP is valid for 10 minutes only.</p>
+                        </div>
+                    `
+                };
+                await transporter.sendMail(mailOptions);
+                emailSent = true;
+            } catch (err) {
+                console.error("❌ Nodemailer Error:", err.message);
+            }
+        }
+
+        res.status(200).json({ 
+            message: emailSent 
+                ? "මුරපදය වෙනස් කිරීමේ OTP කේතය ඔබගේ ඊමේල් ලිපිනයට යවන ලදී." 
+                : "OTP කේතය සාර්ථකව ජනනය කරන ලදී (සංවර්ධන ප්‍රකාරයේදී සර්වර් කන්සෝලය බලන්න)."
+        });
+    } catch (err) {
+        console.error("Forgot Password Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post('/reset-password-otp', async (req, res) => {
+    try {
+        const { email, otpCode, newPassword } = req.body;
+        
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "පරිශීලකයා හමු නොවීය." });
+        }
+
+        // Check if OTP exists and is valid
+        if (!user.resetOTP || user.resetOTP !== otpCode) {
+            return res.status(400).json({ message: "ඇතුළත් කළ OTP කේතය වැරදියි." });
+        }
+
+        // Check if OTP has expired
+        if (new Date() > user.resetOTPExpires) {
+            return res.status(400).json({ message: "OTP කේතයේ වලංගු කාලය අවසන් වී ඇත." });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update password and clear OTP fields
+        user.password = hashedPassword;
+        user.resetOTP = undefined;
+        user.resetOTPExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: "මුරපදය සාර්ථකව වෙනස් කරන ලදී!" });
+    } catch (err) {
+        console.error("OTP Reset Error:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 // ==========================================
 // 1. 📝 SIGN UP / REGISTER API

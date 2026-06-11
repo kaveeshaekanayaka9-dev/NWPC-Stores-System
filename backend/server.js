@@ -8,6 +8,10 @@ const fileRoutes = require('./routes/fileRoutes');
 const authRoutes = require('./routes/authRoutes'); 
 const adminRoutes = require('./routes/adminRoutes');
 const reportRoutes = require('./routes/reportRoutes'); 
+const notificationRoutes = require('./routes/notificationRoutes');
+
+
+
 
 // Models
 const File = require('./models/File'); 
@@ -26,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes); 
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 // Rack logic route

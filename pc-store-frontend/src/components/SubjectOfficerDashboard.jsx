@@ -21,24 +21,78 @@ const [newFile, setNewFile] = useState(null);
 const [officerData, setOfficerData] = useState({});
 const [selectedFiles, setSelectedFiles] = useState([]);
 const [allSelected, setAllSelected] = useState(false);
- const [historyLogs, setHistoryLogs] = useState([]);
+const [historyLogs, setHistoryLogs] = useState([]);
+const [notifications, setNotifications] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
 
 
-// Officer ලැයිස්තුව ලබාගැනීමට useEffect එකක්
-useEffect(() => {
-  const fetchOfficers = async () => {
+  useEffect(() => {
+    const fetchOfficers = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/auth/all-officers'); // ඔබේ officerලා ඉන්න route එක
+        // දත්ත Map කරගන්න: { "id123": "kumara@gmail.com", ... }
+        const map = {};
+        res.data.forEach(user => { map[user._id] = user.email; });
+        setOfficerData(map);
+      } catch (err) {
+        console.error("Officer data fetch failed", err);
+      }
+    };
+    fetchOfficers();
+  }, []);
+
+  const fetchNotifications = async () => {
+    if (!user || !user.email) return;
     try {
-      const res = await axios.get('http://localhost:5000/api/auth/all-officers'); // ඔබේ officerලා ඉන්න route එක
-      // දත්ත Map කරගන්න: { "id123": "kumara@gmail.com", ... }
-      const map = {};
-      res.data.forEach(user => { map[user._id] = user.email; });
-      setOfficerData(map);
+      const res = await axios.get(`http://localhost:5000/api/notifications/${user.email}`);
+      setNotifications(res.data);
+      const unread = res.data.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
     } catch (err) {
-      console.error("Officer data fetch failed", err);
+      console.error("Notifications fetch failed", err);
     }
   };
-  fetchOfficers();
-}, []);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await axios.put(`http://localhost:5000/api/notifications/${id}/read`);
+      fetchNotifications();
+    } catch (err) {
+      console.error("Mark read failed", err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!user || !user.email) return;
+    try {
+      await axios.put(`http://localhost:5000/api/notifications/read-all/${user.email}`);
+      fetchNotifications();
+    } catch (err) {
+      console.error("Mark all read failed", err);
+    }
+  };
+
+  const handleDeleteNotification = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/notifications/${id}`);
+      fetchNotifications();
+    } catch (err) {
+      console.error("Delete notification failed", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !user.email) return;
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000); // Poll every 10s
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    if (user && user.email && activeTab === 'NOTIFICATIONS') {
+      fetchNotifications();
+    }
+  }, [activeTab]);
 
 const toggleFileSelection = (id) => {
   if (selectedFiles.includes(id)) {
@@ -136,37 +190,44 @@ const handleView = (file) => {
 };
 
 // 1. Modal එක විවෘත කිරීමට
+// 1. Edit බොත්තම එබූ විට Modal එක විවෘත කිරීම
 const handleEditClick = (file) => {
-    setCurrentFile(file);
-    setIsModalOpen(true);
-  };
+  setCurrentFile(file);
+  setNewFile(null); 
+  setIsModalOpen(true);
+};
 
-// 2. අලුත් ෆයිල් එක සහ status එක යාවත්කාලීන කිරීමට
+// 2. අලුත් ෆයිල් එක සහ status එක යාවත්කාලීන කිරීම
 const handleUpdateSubmit = async () => {
+  console.log("Current File ID:", currentFile?._id);
+  console.log("Selected New File:", newFile);
+
   if (!currentFile?._id) {
     alert("Please select a file to update.");
     return;
   }
 
+  // ෆයිල් එක තෝරා නැතිනම් පමණක් Error එකක් පෙන්වන්න
   if (!newFile) {
     alert("කරුණාකර නව ලිපිගොනුව තෝරන්න.");
     return;
   }
 
   const formData = new FormData();
-  formData.append('file', newFile); // අලුත් ෆයිල් එක
-  formData.append('isVerified', 'PENDING'); // status එක PENDING කරයි
+  formData.append('file', newFile); 
+  formData.append('isVerified', 'PENDING');
 
   try {
-    await axios.put(`http://localhost:5000/api/files/update/${currentFile._id}`, formData, {
+    const response = await axios.put(`http://localhost:5000/api/files/update/${currentFile._id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    alert("✅ ලිපිගොනුව සහ අනුමැතිය නැවත යොමු කරන ලදී.");
-    setIsModalOpen(false); // Modal එක වසන්න
-    setNewFile(null); // පරණ දත්ත Reset කරන්න
-    fetchMyFiles(); // ලැයිස්තුව Refresh කරන්න
+    
+    alert("✅ ලිපිගොනුව සාර්ථකව යාවත්කාලීන කරන ලදී.");
+    setIsModalOpen(false);
+    setNewFile(null);
+    fetchMyFiles();
   } catch (err) {
-    console.error(err);
+    console.error("Update Error:", err.response ? err.response.data : err.message);
     alert("❌ යාවත්කාලීන කිරීම අසාර්ථකයි.");
   }
 };
@@ -325,6 +386,22 @@ useEffect(() => {
 >
   ⏳ Transaction History
 </div>
+
+<div 
+  style={{
+    ...styles.navItemLink, 
+    ...(activeTab === 'NOTIFICATIONS' && styles.activeNav),
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  }}
+  onClick={() => setActiveTab('NOTIFICATIONS')}
+>
+  <span>🔔 Notifications</span>
+  {unreadCount > 0 && (
+    <span style={styles.sidebarBadge}>{unreadCount}</span>
+  )}
+</div>
         </nav>
 
         <button 
@@ -391,11 +468,11 @@ useEffect(() => {
 >
   VIEW
 </button>
-    <button style={styles.editBtn} onClick={ handleEditClick}>EDITE</button>
+    <button style={styles.editBtn} onClick={() => handleEditClick(myFiles.find(f => f._id === selectedFiles[0]))}>EDITE</button>
     <button style={styles.deleteBtn} onClick={handleBulkDelete}> DELETE</button>
     <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={handleWhatsAppShare}> SHARE</button>
      <button 
-  style={{ ...styles.viewBtn, background: '#f44336', color: 'white' }} 
+  style={{ ...styles.viewBtn, background: '#695251', color: 'white' }} 
   onClick={() => {
     if (selectedFiles.length > 0) {
       handleDownload(`record-${selectedFiles[0]}`);
@@ -573,6 +650,97 @@ useEffect(() => {
   </div>
 )}
 
+        {activeTab === 'NOTIFICATIONS' && (
+          <div style={styles.tableCard}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>🔔 Notifications System</h3>
+                <p style={styles.cardDesc}>ඔබගේ ලිපිගොනු පිළිබඳ තත්‍ය කාලීන දැනුම්දීම්.</p>
+              </div>
+              {notifications.length > 0 && (
+                <button 
+                  style={{ ...styles.shortcutBtn, background: '#475569' }} 
+                  onClick={handleMarkAllAsRead}
+                >
+                  Mark All as Read ✓
+                </button>
+              )}
+            </div>
+
+            <div style={styles.notificationList}>
+              {notifications.length === 0 ? (
+                <div style={styles.emptyNotification}>
+                  <div style={{ fontSize: '40px', marginBottom: '10px' }}>📭</div>
+                  <p>කිසිදු දැනුම්දීමක් නොමැත.</p>
+                </div>
+              ) : (
+                notifications.map((notif) => {
+                  let indicatorColor = '#3498db'; // Submitted
+                  let indicatorBg = 'rgba(52, 152, 219, 0.1)';
+                  let icon = '📂';
+                  
+                  if (notif.type === 'FILE_APPROVED') {
+                    indicatorColor = '#2ecc71'; // Approved
+                    indicatorBg = 'rgba(46, 204, 113, 0.1)';
+                    icon = '✅';
+                  } else if (notif.type === 'FILE_REJECTED') {
+                    indicatorColor = '#e74c3c'; // Rejected
+                    indicatorBg = 'rgba(231, 76, 60, 0.1)';
+                    icon = '❌';
+                  }
+
+                  return (
+                    <div 
+                      key={notif._id} 
+                      style={{
+                        ...styles.notificationItem,
+                        background: notif.isRead ? '#ffffff' : '#f0f9ff',
+                        borderLeft: `5px solid ${indicatorColor}`,
+                        boxShadow: notif.isRead ? 'none' : '0 2px 8px rgba(14, 165, 233, 0.08)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', width: '100%' }}>
+                        <div style={{ ...styles.notificationIcon, color: indicatorColor, background: indicatorBg }}>
+                          {icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <h4 style={{ margin: '0 0 5px 0', fontSize: '15px', color: '#1e293b', fontWeight: 'bold' }}>
+                              {notif.type === 'FILE_SUBMITTED' ? 'File Submitted' : notif.type === 'FILE_APPROVED' ? 'File Approved' : 'File Rejected'}
+                            </h4>
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                              {new Date(notif.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                          <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#475569', lineHeight: '1.4' }}>
+                            {notif.message}
+                          </p>
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            {!notif.isRead && (
+                              <button 
+                                style={{ ...styles.actionBtnTiny, background: indicatorBg, color: indicatorColor }}
+                                onClick={() => handleMarkAsRead(notif._id)}
+                              >
+                                Mark as Read ✓
+                              </button>
+                            )}
+                            <button 
+                              style={{ ...styles.actionBtnTiny, background: '#f1f5f9', color: '#64748b' }}
+                              onClick={() => handleDeleteNotification(notif._id)}
+                            >
+                              Delete 🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
         {isModalOpen && (
   <div style={styles.modalOverlay}>
     <div style={styles.modalContent}>
@@ -645,7 +813,59 @@ const styles = {
   modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
   modalContent: { background: '#fff', padding: '30px', borderRadius: '12px', width: '400px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
   saveBtn: { background: '#2ecc71', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '6px', cursor: 'pointer' },
-  cancelBtn: { background: '#95a5a6', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '6px', cursor: 'pointer' }
+  cancelBtn: { background: '#95a5a6', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '6px', cursor: 'pointer' },
+
+  notificationList: { display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' },
+  notificationItem: { 
+    padding: '20px', 
+    borderRadius: '12px', 
+    border: '1px solid #e2e8f0', 
+    transition: '0.2s', 
+    display: 'flex',
+    alignItems: 'flex-start',
+    boxSizing: 'border-box',
+    textAlign: 'left'
+  },
+  notificationIcon: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '20px',
+    fontWeight: 'bold',
+    flexShrink: 0
+  },
+  actionBtnTiny: {
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: '0.2s',
+    outline: 'none'
+  },
+  emptyNotification: {
+    textAlign: 'center',
+    padding: '50px 20px',
+    color: '#94a3b8',
+    fontSize: '15px',
+    background: '#f8fafc',
+    borderRadius: '12px',
+    border: '1px dashed #cbd5e1'
+  },
+  sidebarBadge: {
+    background: '#ef4444',
+    color: '#fff',
+    borderRadius: '50%',
+    padding: '2px 8px',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    minWidth: '15px',
+    textAlign: 'center'
+  }
 };
 
 export default SubjectOfficerDashboard;

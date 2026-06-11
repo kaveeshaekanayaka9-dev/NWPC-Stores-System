@@ -5,9 +5,9 @@ import Register from './components/Register';     // 📝 ලියාපදි�
 import Home from './components/Home';             // 🏠 ලොග් වූ පසු පෙනෙන ප්‍රධාන පිටුව
 import FileCreationPage from './components/FileCreationPage';
 
-// 🚨 ඩෑෂ්බෝඩ් කම්පෝනන්ට්ස් දෙකම නිවැරදිව Import කරගැනීම
 import AdminDashboard from './components/AdminDashboard'; 
 import SubjectOfficerDashboard from './components/SubjectOfficerDashboard'; 
+import ForgotPassword from './components/ForgotPassword'; 
 
 function App() {
   // ඇප් එක පටන් ගනිද්දීම මුලින්ම පෙන්වන්නේ පොදු පිටුවයි (MainHome)
@@ -41,6 +41,7 @@ function App() {
           onLoginSuccess={handleLoginSuccess} 
           goToRegister={() => setView('REGISTER')} 
           goToBack={() => setView('MAIN_HOME')} 
+          goToForgotPassword={() => setView('FORGOT_PASSWORD')}
         />
       )}
 
@@ -80,6 +81,13 @@ function App() {
         <FileCreationPage 
           user={user} 
           goToDashboard={() => setView('DASHBOARD')} 
+        />
+      )}
+
+      {/* 7. 🔑 FORGOT PASSWORD / OTP RESET VIEW */}
+      {view === 'FORGOT_PASSWORD' && (
+        <ForgotPassword 
+          goToLogin={() => setView('LOGIN')} 
         />
       )}
 
