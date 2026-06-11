@@ -136,37 +136,41 @@ const handleView = (file) => {
 };
 
 // 1. Modal එක විවෘත කිරීමට
+// 1. Edit බොත්තම එබූ විට Modal එක විවෘත කිරීම
 const handleEditClick = (file) => {
-    setCurrentFile(file);
-    setIsModalOpen(true);
-  };
+  console.log("Editing file:", file); // මෙය පරීක්ෂා 
+  setCurrentFile(file); // මෙතනදී file එකේ _id එක ඇතුළත් විය යුතුයි
+  setIsModalOpen(true);
+};
 
-// 2. අලුත් ෆයිල් එක සහ status එක යාවත්කාලීන කිරීමට
+// 2. අලුත් ෆයිල් එක සහ status එක යාවත්කාලීන කිරීම
 const handleUpdateSubmit = async () => {
   if (!currentFile?._id) {
     alert("Please select a file to update.");
     return;
   }
 
+  // ෆයිල් එක තෝරා නැතිනම් පමණක් Error එකක් පෙන්වන්න
   if (!newFile) {
     alert("කරුණාකර නව ලිපිගොනුව තෝරන්න.");
     return;
   }
 
   const formData = new FormData();
-  formData.append('file', newFile); // අලුත් ෆයිල් එක
-  formData.append('isVerified', 'PENDING'); // status එක PENDING කරයි
+  formData.append('file', newFile); // මෙය ඔබේ backend upload.single('file') සමග ගැලපිය යුතුයි
+  formData.append('isVerified', 'PENDING');
 
   try {
-    await axios.put(`http://localhost:5000/api/files/update/${currentFile._id}`, formData, {
+    const response = await axios.put(`http://localhost:5000/api/files/update/${currentFile._id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    alert("✅ ලිපිගොනුව සහ අනුමැතිය නැවත යොමු කරන ලදී.");
-    setIsModalOpen(false); // Modal එක වසන්න
-    setNewFile(null); // පරණ දත්ත Reset කරන්න
-    fetchMyFiles(); // ලැයිස්තුව Refresh කරන්න
+    
+    alert("✅ ලිපිගොනුව සාර්ථකව යාවත්කාලීන කරන ලදී.");
+    setIsModalOpen(false);
+    setNewFile(null);
+    fetchMyFiles();
   } catch (err) {
-    console.error(err);
+    console.error("Update Error:", err.response ? err.response.data : err.message);
     alert("❌ යාවත්කාලීන කිරීම අසාර්ථකයි.");
   }
 };
@@ -391,7 +395,10 @@ useEffect(() => {
 >
   VIEW
 </button>
-    <button style={styles.editBtn} onClick={ handleEditClick}>EDITE</button>
+    
+<button style={styles.editBtn} onClick={() => handleEditClick(selectedFiles[0] ? myFiles.find(f => f._id === selectedFiles[0]) : null)}>
+  EDITE
+</button>
     <button style={styles.deleteBtn} onClick={handleBulkDelete}> DELETE</button>
     <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={handleWhatsAppShare}> SHARE</button>
      <button 
