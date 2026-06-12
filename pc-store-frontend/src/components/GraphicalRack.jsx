@@ -2,167 +2,134 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const GraphicalRack = () => {
-  // States මඟින් දත්ත පාලනය කිරීම
-  const [files, setFiles] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState('All');
-  
-  // Form එකේ දත්ත සටහන් කරගන්නා State එක
-  const [formData, setFormData] = useState({
-    fileNumber: '',
-    fileName: '',
-    category: '',
-    description: ''
+  const [selectedRack, setSelectedRack] = useState('Rack 01');
+  const [rackData, setRackData] = useState({
+    'shelf 04': Array(8).fill(null),
+    'shelf 03': Array(8).fill(null),
+    'shelf 02': Array(8).fill(null),
+    'shelf 01': Array(8).fill(null)
   });
+  const [loading, setLoading] = useState(false);
 
-  // 1. Backend Server එකෙන් දැනට ඩේටාබේස් එකේ තියෙන ඔක්කොම ෆයිල්ස් ටික ලෝඩ් කරගැනීම (GET)
-  const fetchFiles = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/files/all');
-      setFiles(response.data);
-    } catch (error) {
-      console.error("❌ Error fetching files:", error);
-    }
-  };
+  const shelves = ['shelf 04', 'shelf 03', 'shelf 02', 'shelf 01'];
 
   useEffect(() => {
-    fetchFiles();
-  }, []);
-
-  // 2. Form එකට Type කරද්දී දත්ත වෙනස් වීම පාලනය කිරීම
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  // 3. අලුත් ෆයිල් එකක් සේව් කිරීම (POST)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.fileNumber || !formData.fileName || !formData.category) {
-      alert("කරුණාකර අනිවාර්යය විස්තර ටික ඇතුලත් කරන්න!");
-      return;
-    }
-
-    try {
-      const response = await axios.post('http://localhost:5000/api/files/add', formData);
-      if (response.status === 201) {
-        alert("🎉 ෆයිල් එක සාර්ථකව ඩේටාබේස් එකට ඇතුලත් කළා!");
-        // Form එක හිස් කිරීම
-        setFormData({ fileNumber: '', fileName: '', category: '', description: '' });
-        // ලිස්ට් එක අලුත් කිරීම
-        fetchFiles();
+    const fetchRackData = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`http://localhost:5000/api/racks/${selectedRack}`);
+        setRackData(response.data);
+      } catch (err) {
+        console.error("API Error:", err);
       }
-    } catch (error) {
-      console.error("❌ Error saving file:", error);
-      alert("ෆයිල් එක සේව් කිරීමට නොහැකි වුණා. Backend Server එක පරීක්ෂා කරන්න.");
+      setLoading(false);
     }
-  };
+    fetchRackData();
+  }, [selectedRack]);
 
-  // 4. Search සහ Filter Logic එක ක්‍රියාත්මක කිරීම
-  const filteredFiles = files.filter(file => {
-    const matchesSearch = 
-      file.fileNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      file.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = filterCategory === 'All' || file.category === filterCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
+  const [hoveredFile, setHoveredFile] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+  };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Segoe UI, sans-serif', backgroundColor: '#f4f6f9', minHeight: '100vh' }}>
-      
-      {/* 📊 TOP STATS CARDS */}
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-        <div style={{ flex: 1, backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', borderLeft: '5px solid #007bff' }}>
-          <h4 style={{ margin: 0, color: '#666' }}>මුළු ෆයිල් ප්‍රමාණය</h4>
-          <h2 style={{ margin: '10px 0 0 0', color: '#333' }}>{files.length}</h2>
-        </div>
-        <div style={{ flex: 1, backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', borderLeft: '5px solid #28a745' }}>
-          <h4 style={{ margin: 0, color: '#666' }}>දැනට ස්ටෝර් එකේ ඇති ෆයිල්ස්</h4>
-          <h2 style={{ margin: '10px 0 0 0', color: '#28a745' }}>{files.filter(f => f.status === 'AVAILABLE').length}</h2>
-        </div>
+    <div style={styles.container} onMouseMove={handleMouseMove}>
+      <div style={styles.header}>
+        <h2 style={styles.title}>🗄️ Interactive Graphical Rack Layout</h2>
+        <p style={styles.subtitle}>View physical file placements across different racks in the storage.</p>
       </div>
 
-      <div style={{ display: 'flex', gap: '30px' }}>
-        
-        {/* 📝 LEFT: NEW FILE INSERT FORM */}
-        <div style={{ flex: 1, backgroundColor: '#fff', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', height: 'fit-content' }}>
-          <h3 style={{ marginTop: 0, color: '#007bff', borderBottom: '2px solid #f4f6f9', paddingBottom: '10px' }}>🆕 අලුත් ෆයිල් එකක් ඇතුලත් කිරීම</h3>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>ෆයිල් අංකය (File Number) *</label>
-              <input type="text" name="fileNumber" value={formData.fileNumber} onChange={handleInputChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="උදා: PC/2026/FIN/01" />
-            </div>
+      <div style={styles.controls}>
+        <label style={styles.label}>Select Rack Location:</label>
+        <select style={styles.dropdown} value={selectedRack} onChange={(e) => setSelectedRack(e.target.value)}>
+          <option value="Rack 01">Rack 01 (General Files)</option>
+          <option value="Rack 02">Rack 02 (Account Files)</option>
+          <option value="Rack 03">Rack 03 (Legal Documents)</option>
+          <option value="Rack 04">Rack 04 (Establishment)</option>
+          <option value="Rack 05">Rack 05 (Miscellaneous)</option>
+        </select>
+      </div>
 
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>ෆයිල් එකේ නම (File Name) *</label>
-              <input type="text" name="fileName" value={formData.fileName} onChange={handleInputChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="උදා: වැටුප් වර්ධක වාර්තා" />
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>විෂය පථය (Category) *</label>
-              <select name="category" value={formData.category} onChange={handleInputChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                <option value="">තෝරන්න...</option>
-                <option value="Finance">මුදල් (Finance)</option>
-                <option value="Administration">පරිපාලන (Administration)</option>
-                <option value="Establishment">ආයතන (Establishment)</option>
-                <option value="Legal">නීතිමය (Legal)</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>වෙනත් විස්තර (Description)</label>
-              <textarea name="description" value={formData.description} onChange={handleInputChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', height: '8px' }} placeholder="ෆයිල් එක පිළිබඳ කෙටි විස්තරයක්..."></textarea>
-            </div>
-
-            <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>📁 සුරකින්න (Save File)</button>
-          </form>
-        </div>
-
-        {/* 🔍 RIGHT: SEARCH & RACK VIEW */}
-        <div style={{ flex: 2, backgroundColor: '#fff', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ marginTop: 0, color: '#333' }}>🔍 ඉක්මන් සෙවුම සහ භෞතික පිහිටීම</h3>
-          
-          {/* SEARCH FILTERS */}
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-            <input type="text" placeholder="ෆයිල් අංකයෙන් හෝ නමෙන් සොයන්න..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 2, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
-              <option value="All">සියලුම අංශ</option>
-              <option value="Finance">Finance</option>
-              <option value="Administration">Administration</option>
-              <option value="Establishment">Establishment</option>
-              <option value="Legal">Legal</option>
-            </select>
-          </div>
-
-          {/* 🗄️ GRAPHICAL FILE GRID (RACK REPRESENTATION) */}
-          <h4 style={{ color: '#555' }}>📦 සෙවුමට අනුව ලැබුණු ෆයිල්ස් ({filteredFiles.length}):</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '2px dashed #ddd', minHeight: '200px' }}>
-            {filteredFiles.length === 0 ? (
-              <p style={{ color: '#999', gridColumn: '1/-1', textAlign: 'center', marginTop: '80px' }}>දත්ත කිසිවක් හමු නොවීය.</p>
-            ) : (
-              filteredFiles.map((file) => (
-                <div key={file._id} style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', borderTop: `4px solid ${file.category === 'Finance' ? '#e11d48' : file.category === 'Administration' ? '#2563eb' : '#16a34a'}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#999', textTransform: 'uppercase' }}>{file.category}</span>
-                    <h4 style={{ margin: '5px 0', color: '#333', fontSize: '15px' }}>{file.fileNumber}</h4>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#666' }}>{file.fileName}</p>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #eee', paddingTop: '10px', marginTop: '10px' }}>
-                    <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '12px', backgroundColor: file.status === 'AVAILABLE' ? '#d4edda' : '#f8d7da', color: file.status === 'AVAILABLE' ? '#155724' : '#721c24', fontWeight: 'bold' }}>
-                      {file.status}
-                    </span>
-                  </div>
+      <div style={styles.rackContainer}>
+        {loading ? (
+          <div style={styles.loading}>Loading rack data...</div>
+        ) : (
+          <div style={styles.rackGrid}>
+            {shelves.map((shelf) => (
+              <div key={shelf} style={styles.shelfRow}>
+                <div style={styles.shelfLabel}>{shelf.toUpperCase()}</div>
+                <div style={styles.slotsContainer}>
+                  {(rackData[shelf] || Array(8).fill(null)).map((slotData, index) => {
+                    const isOccupied = slotData !== null && slotData !== 0 && slotData !== undefined;
+                    return (
+                      <div 
+                        key={index} 
+                        style={{ ...styles.slotBox, 
+                                 border: isOccupied ? '2px solid #10b981' : '2px dashed #94a3b8',
+                                 background: isOccupied ? 'rgba(16, 185, 129, 0.1)' : 'transparent' 
+                               }}
+                        onMouseEnter={() => isOccupied && setHoveredFile(slotData)}
+                        onMouseLeave={() => setHoveredFile(null)}
+                      >
+                        {isOccupied ? (
+                          <div style={styles.fileIcon}>📄</div>
+                        ) : (
+                          <span style={styles.emptyText}>Empty</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
-
-        </div>
-
+        )}
       </div>
+
+      {hoveredFile && (
+        <div style={{
+          ...styles.tooltip,
+          top: mousePos.y + 15,
+          left: mousePos.x + 15,
+        }}>
+          <div style={styles.tooltipHeader}>File Details</div>
+          <div style={styles.tooltipBody}>
+            <p style={styles.tooltipP}><strong>Name:</strong> {hoveredFile.fileName}</p>
+            <p style={styles.tooltipP}><strong>Number:</strong> {hoveredFile.fileNumber}</p>
+            <p style={styles.tooltipP}><strong>Category:</strong> {hoveredFile.category}</p>
+            <p style={styles.tooltipP}><strong>Submitted By:</strong> {hoveredFile.submittedBy}</p>
+            <p style={styles.tooltipP}><strong>Location:</strong> {hoveredFile.rackNumber} / {hoveredFile.shelfNumber} / Slot {hoveredFile.slotIndex || 'N/A'}</p>
+            <p style={styles.tooltipP}><strong>Status:</strong> {hoveredFile.isVerified}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+const styles = {
+  container: { padding: '30px', fontFamily: '"Inter", "Segoe UI", sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', color: '#1e293b' },
+  header: { marginBottom: '30px' },
+  title: { fontSize: '28px', fontWeight: '800', color: '#0f172a', margin: '0 0 10px 0' },
+  subtitle: { color: '#64748b', margin: 0, fontSize: '16px' },
+  controls: { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px', background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' },
+  label: { fontWeight: '600', color: '#334155' },
+  dropdown: { padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f1f5f9', cursor: 'pointer', minWidth: '250px' },
+  rackContainer: { background: '#fff', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', border: '1px solid #e2e8f0' },
+  loading: { textAlign: 'center', padding: '50px', color: '#64748b', fontSize: '18px' },
+  rackGrid: { display: 'flex', flexDirection: 'column', gap: '25px' },
+  shelfRow: { display: 'flex', alignItems: 'center', gap: '20px', background: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0' },
+  shelfLabel: { width: '100px', fontSize: '14px', fontWeight: '700', color: '#475569', letterSpacing: '1px' },
+  slotsContainer: { flex: 1, display: 'flex', gap: '15px' },
+  slotBox: { flex: 1, height: '90px', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' },
+  fileIcon: { fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' },
+  emptyText: { fontSize: '12px', color: '#cbd5e1', fontWeight: '600', textTransform: 'uppercase' },
+  tooltip: { position: 'fixed', zIndex: 1000, background: 'rgba(15, 23, 42, 0.95)', color: '#fff', padding: '0', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', width: '320px', pointerEvents: 'none' },
+  tooltipHeader: { background: 'rgba(255,255,255,0.1)', padding: '12px 15px', borderTopLeftRadius: '12px', borderTopRightRadius: '12px', fontSize: '14px', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.05)' },
+  tooltipBody: { padding: '15px', fontSize: '13px', lineHeight: '1.6' },
+  tooltipP: { margin: '0 0 8px 0' }
 };
 
 export default GraphicalRack;

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Overview from './Overview';
+import GraphicalRack from './GraphicalRack';
 import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 
 
@@ -183,6 +187,62 @@ const handleReapproval = async (fileId) => {
     f.rackNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 📝 PDF & Excel Export Functions
+  const handleExportPDF = (data, title, fileName) => {
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text(`NWPC Stores Management System`, 14, 22);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
+    doc.text(title, 14, 30);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 38);
+
+    const tableColumn = ["File No", "File Name", "Category", "Officer", "Status", "Location"];
+    const tableRows = [];
+
+    data.forEach(f => {
+      const locationData = f.rackNumber === 'Unassigned' ? 'Unassigned' : `Rack ${f.rackNumber} / Shelf ${f.shelfNumber}`;
+      const fileData = [
+        f.fileNumber || 'N/A',
+        f.fileName || 'N/A',
+        f.category || 'N/A',
+        f.submittedBy || 'N/A',
+        f.isVerified || 'N/A',
+        locationData
+      ];
+      tableRows.push(fileData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 45,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [15, 23, 42] },
+    });
+
+    doc.save(`${fileName}.pdf`);
+  };
+
+  const handleExportExcel = (data, fileName) => {
+    const formattedData = data.map(f => ({
+      "File Number": f.fileNumber,
+      "File Name": f.fileName,
+      "Category": f.category,
+      "Officer": f.submittedBy,
+      "Status": f.isVerified,
+      "Physical Location": f.rackNumber === 'Unassigned' ? 'Unassigned' : `Rack ${f.rackNumber} / Shelf ${f.shelfNumber}`,
+      "Date Created": f.createdAt ? new Date(f.createdAt).toLocaleString() : 'N/A'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  };
+
   return (
     <div style={styles.container}>
       {/* SIDEBAR */}
@@ -208,6 +268,8 @@ const handleReapproval = async (fileId) => {
           {/* 🗄️ මෙන්න අලුතින් දාපු ටැබ් එක */}
           <div style={{ ...styles.navItem, ...(activeTab === 'VERIFIED_LIST' && styles.activeNav) }} onClick={() => setActiveTab('VERIFIED_LIST')}>🗄️ Managed Rack Inventory</div>
           
+          <div style={{ ...styles.navItem, ...(activeTab === 'GRAPHICAL_RACK' && styles.activeNav) }} onClick={() => setActiveTab('GRAPHICAL_RACK')}>🗄️ Graphical Racks</div>
+
           <div style={{ ...styles.navItem, ...(activeTab === 'AUDIT' && styles.activeNav) }} onClick={() => setActiveTab('AUDIT')}>📊 System-Wide Audit</div>
           
         </nav>
@@ -672,14 +734,28 @@ const handleReapproval = async (fileId) => {
                 <p style={{ ...styles.desc, margin: '5px 0 0 0' }}>රාක්ක අංක සහ තට්ටු අංක සාර්ථකව වෙන් කර, දැනට භෞතික ගබඩාවේ තැන්පත් කර ඇති ලිපිගොනු ලේඛනය.</p>
               </div>
               
-              {/* 🔍 සර්ච් බාර් එක */}
-              <input 
-                type="text" 
-                placeholder="🔍 Search File No, Name or Rack..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={styles.searchBar}
-              />
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button 
+                  onClick={() => handleExportExcel(filteredVerifiedFiles, 'Verified_Rack_Inventory')} 
+                  style={{ padding: '8px 15px', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: '#10b981' }}
+                >
+                  Export Excel 📊
+                </button>
+                <button 
+                  onClick={() => handleExportPDF(filteredVerifiedFiles, 'Managed Rack Inventory Report', 'Verified_Rack_Inventory')} 
+                  style={{ padding: '8px 15px', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: '#ef4444' }}
+                >
+                  Export PDF 📄
+                </button>
+                {/* 🔍 සර්ච් බාර් එක */}
+                <input 
+                  type="text" 
+                  placeholder="🔍 Search File No, Name or Rack..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={styles.searchBar}
+                />
+              </div>
             </div>
 
             <table style={styles.table}>
@@ -729,11 +805,33 @@ const handleReapproval = async (fileId) => {
           </div>
         )}
 
+        {activeTab === 'GRAPHICAL_RACK' && (
+          <GraphicalRack />
+        )}
+
         {/* 4. SYSTEM-WIDE AUDIT */}
         {activeTab === 'AUDIT' && (
           <div style={styles.card}>
-            <h3>📊 System-Wide Audit & Inventory Reports</h3>
-            <p style={styles.desc}>ගබඩාව තුළ ඇති සියලුම ලිපිගොනු (Pending, Verified, Rejected) පිළිබඳ සමස්ත වාර්තාව.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <div>
+                <h3 style={{margin:0}}>📊 System-Wide Audit & Inventory Reports</h3>
+                <p style={{...styles.desc, margin:'5px 0 0 0'}}>ගබඩාව තුළ ඇති සියලුම ලිපිගොනු (Pending, Verified, Rejected) පිළිබඳ සමස්ත වාර්තාව.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => handleExportExcel(allFiles, 'System_Wide_Audit')} 
+                  style={{ padding: '8px 15px', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: '#10b981' }}
+                >
+                  Export Excel 📊
+                </button>
+                <button 
+                  onClick={() => handleExportPDF(allFiles, 'System-Wide Audit & Inventory Report', 'System_Wide_Audit')} 
+                  style={{ padding: '8px 15px', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: '#ef4444' }}
+                >
+                  Export PDF 📄
+                </button>
+              </div>
+            </div>
             <table style={styles.table}>
               <thead>
                 <tr style={styles.thRow}>

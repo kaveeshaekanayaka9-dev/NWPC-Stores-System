@@ -3,6 +3,7 @@ import axios from 'axios';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
+import GraphicalRack from './GraphicalRack';
 
 const SubjectOfficerDashboard = ({ user, goToHome, goToFileCreation, goToMainHome }) => {
   const [activeTab, setActiveTab] = useState('DASHBOARD'); 
@@ -381,6 +382,12 @@ useEffect(() => {
 
          
 <div 
+  style={{...styles.navItemLink, ...(activeTab === 'GRAPHICAL_RACK' && styles.activeNav)}}
+  onClick={() => setActiveTab('GRAPHICAL_RACK')}
+>
+  🗄️ Graphical Racks
+</div>
+<div 
   style={{...styles.navItemLink, ...(activeTab === 'HISTORY' && styles.activeNav)}}
   onClick={() => setActiveTab('HISTORY')}
 >
@@ -649,6 +656,10 @@ useEffect(() => {
     </div>
   </div>
 )}
+
+        {activeTab === 'GRAPHICAL_RACK' && (
+          <GraphicalRack />
+        )}
 
         {activeTab === 'NOTIFICATIONS' && (
           <div style={styles.tableCard}>

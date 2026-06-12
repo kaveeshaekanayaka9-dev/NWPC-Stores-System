@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import MainHome from './components/MainHome';     // 🏢 සැමට විවෘත පොදු පිටුව
 import Login from './components/Login';           // 🔑 ලොගින් පිටුව
 import Register from './components/Register';     // 📝 ලියාපදිංචි වීමේ පිටුව
@@ -15,7 +16,8 @@ function App() {
   const [user, setUser] = useState(null); // ලොග් වන පරිශීලකයාගේ දත්ත තබා ගැනීමට
 
   // 🔑 සාර්ථකව ලොග් වූ පසු ක්‍රියාත්මක වන Function එක
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = (userData, token) => {
+    localStorage.setItem('token', token);
     setUser(userData);
     setView('HOME'); // කෙලින්ම ලොග් වූවන්ගේ Home එකට යයි
   };
@@ -23,9 +25,28 @@ function App() {
   // 🚪 ලොග් අවුට් වීමේදී User දත්ත මකා දමා Main Home වෙත යවන පොදු ශ්‍රිතය
   const handleLogout = () => {
     setUser(null);          // User State එක හිස් කරයි
+    localStorage.removeItem('token'); // Token එක අයින් කරයි
     localStorage.clear();   // LocalStorage දත්ත ක්ලියර් කරයි
     setView('MAIN_HOME');   // කෙලින්ම ප්‍රධාන පොදු පිටුවට (MainHome) යවයි
   };
+
+  // Global Axios Interceptor එක සැකසීම
+  useEffect(() => {
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+    };
+  }, []);
 
   return (
     <div className="app-container">

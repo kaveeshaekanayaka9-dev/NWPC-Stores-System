@@ -184,8 +184,9 @@ const columns = [1, 2, 3, 4, 5, 6, 7, 8];
     <div style={styles.shelfLabel}>{shelf}</div>
     <div style={styles.slotsContainer}>
       {/* මෙතැනදී rackData තිබේදැයි බලන්න */}
-      {(rackData[selectedRack]?.[shelf] || Array(8).fill(0)).map((col, index) => {
-        const isOccupied = (rackData[selectedRack]?.[shelf]?.[index]) === 1;
+      {(rackData[selectedRack]?.[shelf] || Array(8).fill(null)).map((col, index) => {
+        const slotData = rackData[selectedRack]?.[shelf]?.[index];
+        const isOccupied = slotData !== null && slotData !== 0 && slotData !== undefined;
         
         return (
           <div key={index} style={{ ...styles.slotBox, background: isOccupied ? '#2ecc71' : 'rgba(255, 255, 255, 0.05)' }}>
