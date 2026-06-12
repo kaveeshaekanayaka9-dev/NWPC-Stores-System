@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# .gitignore ගොනුව තුළට මෙය එක් කරන්න:
+node_modules
+.env
