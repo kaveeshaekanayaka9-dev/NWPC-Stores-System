@@ -7,15 +7,21 @@ router.get('/chart-data', async (req, res) => {
     try {
         console.log("Chart data request received!"); // මෙය ලොග් වේදැයි බලන්න
         
+        // Fix: Group strictly by rackNumber so we don't get duplicate rack labels in the bar chart
         const rackStats = await File.aggregate([
-            { $group: { _id: { rack: "$rackNumber", category: "$category" }, count: { $sum: 1 } } }
+            { $group: { _id: "$rackNumber", count: { $sum: 1 } } }
         ]);
 
         const statusStats = await File.aggregate([
             { $group: { _id: "$isVerified", count: { $sum: 1 } } }
         ]);
 
-        res.json({ rackStats, statusStats });
+        // New: Group files by category for the Doughnut chart
+        const categoryStats = await File.aggregate([
+            { $group: { _id: "$category", count: { $sum: 1 } } }
+        ]);
+
+        res.json({ rackStats, statusStats, categoryStats });
     } catch (err) {
         console.error("DEBUG ERROR:", err); // වැදගත්ම කොටස: දෝෂය හරියටම පෙන්වයි
         res.status(500).json({ error: "Server error occurred", details: err.message });

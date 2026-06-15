@@ -47,8 +47,8 @@ const GraphicalRack = () => {
           <option value="Rack 01">Rack 01 (General Files)</option>
           <option value="Rack 02">Rack 02 (Account Files)</option>
           <option value="Rack 03">Rack 03 (Legal Documents)</option>
-          <option value="Rack 04">Rack 04 (Establishment)</option>
-          <option value="Rack 05">Rack 05 (Miscellaneous)</option>
+          <option value="Rack 04">Rack 04 (Inventory)</option>
+          <option value="Rack 05">Rack 05 (Establishment)</option>
         </select>
       </div>
 

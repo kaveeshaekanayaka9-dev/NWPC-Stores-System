@@ -193,13 +193,9 @@ const handleView = (file) => {
 // 1. Modal එක විවෘත කිරීමට
 // 1. Edit බොත්තම එබූ විට Modal එක විවෘත කිරීම
 const handleEditClick = (file) => {
-<<<<<<< HEAD
+  console.log("Editing file:", file);
   setCurrentFile(file);
-  setNewFile(null); 
-=======
-  console.log("Editing file:", file); // මෙය පරීක්ෂා 
-  setCurrentFile(file); // මෙතනදී file එකේ _id එක ඇතුළත් විය යුතුයි
->>>>>>> f09a184b766a15eb0f55253d966ac4d8a4a0a8a1
+  setNewFile(null);
   setIsModalOpen(true);
 };
 
@@ -219,12 +215,7 @@ const handleUpdateSubmit = async () => {
     return;
   }
 
-  const formData = new FormData();
-<<<<<<< HEAD
-  formData.append('file', newFile); 
-=======
   formData.append('file', newFile); // මෙය ඔබේ backend upload.single('file') සමග ගැලපිය යුතුයි
->>>>>>> f09a184b766a15eb0f55253d966ac4d8a4a0a8a1
   formData.append('isVerified', 'PENDING');
 
   try {
@@ -484,14 +475,9 @@ useEffect(() => {
 >
   VIEW
 </button>
-<<<<<<< HEAD
-    <button style={styles.editBtn} onClick={() => handleEditClick(myFiles.find(f => f._id === selectedFiles[0]))}>EDITE</button>
-=======
-    
-<button style={styles.editBtn} onClick={() => handleEditClick(selectedFiles[0] ? myFiles.find(f => f._id === selectedFiles[0]) : null)}>
+    <button style={styles.editBtn} onClick={() => handleEditClick(selectedFiles[0] ? myFiles.find(f => f._id === selectedFiles[0]) : null)}>
   EDITE
 </button>
->>>>>>> f09a184b766a15eb0f55253d966ac4d8a4a0a8a1
     <button style={styles.deleteBtn} onClick={handleBulkDelete}> DELETE</button>
     <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={handleWhatsAppShare}> SHARE</button>
      <button 

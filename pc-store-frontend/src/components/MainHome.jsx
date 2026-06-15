@@ -29,7 +29,20 @@ const [rackData, setRackData] = useState({
     'shelf 03': [0, 0, 0, 0, 0, 0, 0, 0],
     'shelf 02': [1, 0, 1, 0, 1, 0, 1, 0],
     'shelf 01': [0, 1, 0, 1, 0, 1, 0, 1]
+  },
+  'Rack 04': {
+    'shelf 04': [1, 1, 1, 1, 1, 1, 1, 1],
+    'shelf 03': [0, 0, 0, 0, 0, 0, 0, 0],
+    'shelf 02': [1, 0, 1, 0, 1, 0, 1, 0],
+    'shelf 01': [0, 1, 0, 1, 0, 1, 0, 1]
+  },
+   'Rack 05': {
+    'shelf 04': [1, 1, 1, 1, 1, 1, 1, 1],
+    'shelf 03': [0, 0, 0, 0, 0, 0, 0, 0],
+    'shelf 02': [1, 0, 1, 0, 1, 0, 1, 0],
+    'shelf 01': [0, 1, 0, 1, 0, 1, 0, 1]
   }
+  
 });
 const shelves = ['shelf 04', 'shelf 03', 'shelf 02', 'shelf 01'];
 const columns = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -163,6 +176,8 @@ const columns = [1, 2, 3, 4, 5, 6, 7, 8];
   <option value="Rack 01">Rack 01 (General Files)</option>
   <option value="Rack 02">Rack 02 (Account Files)</option>
   <option value="Rack 03">Rack 03 (Legal Documents)</option>
+  <option value="Rack 04">Rack 04 (Inventory Files)</option>
+  <option value="Rack 05">Rack 05 (Establishment Documents)</option>
 </select>
         </div>
 

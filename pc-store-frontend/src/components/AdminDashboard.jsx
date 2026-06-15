@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Overview from './Overview';
 import GraphicalRack from './GraphicalRack';
-import { Bar, Pie } from 'react-chartjs-2';
+import { Bar, Pie, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -30,7 +30,7 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   const [shelfNumber, setShelfNumber] = useState('');
   const [reapprovalLocations, setReapprovalLocations] = useState({});
   // AdminDashboard.jsx එකේ ඉහළින්ම මෙය එකතු කරන්න
-const [chartData, setChartData] = useState({ rackStats: [], statusStats: [] });
+const [chartData, setChartData] = useState({ rackStats: [], statusStats: [], categoryStats: [] });
   
 
 
@@ -317,15 +317,18 @@ const handleReapproval = async (fileId) => {
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         
         
-        {/* Bar Chart */}
+        {/* Bar Chart - Files per Rack */}
 <div style={styles.chartContainer}>
     <Bar 
         data={{
-            labels: chartData.rackStats.map(item => item._id.rack),
+            labels: chartData.rackStats.map(item => item._id || 'Unassigned'),
             datasets: [{
                 label: 'Files Count',
                 data: chartData.rackStats.map(item => item.count),
-                backgroundColor: '#0a54ca'
+                backgroundColor: [
+                  '#3b82f6','#6366f1','#8b5cf6','#ec4899','#f59e0b'
+                ],
+                borderRadius: 6,
             }]
         }}
         options={{ 
@@ -333,16 +336,19 @@ const handleReapproval = async (fileId) => {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Files Distribution per Rack', // මාතෘකාව 1
-                    font: { size: 18 }
-                }
+                    text: 'Files Distribution per Rack',
+                    font: { size: 16, weight: 'bold' }
+                },
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
             }
         }}
     />
 </div>
 
-{/* Pie Chart */}
-   
+{/* Pie Chart - Verification Status */}
 <div style={styles.chartContainer}>
     <Pie 
     data={{
@@ -351,10 +357,11 @@ const handleReapproval = async (fileId) => {
             label: 'Verification Status',
             data: chartData.statusStats.map(item => item.count),
             backgroundColor: [
-                '#10b981', // Verified (කොළ)
-                '#f59e0b', // Pending (කහ)
-                '#ef4444'  // Rejected (රතු)
-            ]
+                '#10b981',
+                '#f59e0b',
+                '#ef4444' 
+            ],
+            hoverOffset: 8
         }]
     }}
     options={{ 
@@ -363,15 +370,49 @@ const handleReapproval = async (fileId) => {
             title: {
                 display: true,
                 text: 'Verification Status Overview',
-                font: { size: 18 }
+                font: { size: 16, weight: 'bold' }
             },
-            legend: {
-                position: 'bottom' // ලේබල් ටික චාර්ට් එකට පහළින් පෙන්වීමට
-            }
+            legend: { position: 'bottom' }
         }
     }}
 />
 </div>
+
+{/* Doughnut Chart - Files by Category */}
+<div style={styles.chartContainer}>
+    <Doughnut
+        data={{
+            labels: chartData.categoryStats.map(item => item._id || 'Uncategorized'),
+            datasets: [{
+                label: 'Files by Category',
+                data: chartData.categoryStats.map(item => item.count),
+                backgroundColor: [
+                    '#06b6d4',
+                    '#f97316',
+                    '#a855f7',
+                    '#84cc16',
+                    '#f43f5e',
+                    '#14b8a6'
+                ],
+                hoverOffset: 8,
+                borderWidth: 2
+            }]
+        }}
+        options={{
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Files by Category',
+                    font: { size: 16, weight: 'bold' }
+                },
+                legend: { position: 'bottom' }
+            }
+        }}
+    />
+</div>
+
       </div>
     )}
       
@@ -602,6 +643,7 @@ const handleReapproval = async (fileId) => {
           
           {/* Dual Column Inputs */}
           {/* Rack Number Dropdown */}
+{/* Rack Number Dropdown */}
 <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
   <label style={styles.newLabel}>Rack Number (රාක්ක අංකය)</label>
   <select 
@@ -610,8 +652,10 @@ const handleReapproval = async (fileId) => {
     onChange={(e) => setRackNumber(e.target.value)} 
     required
   >
-    <option value="">Select Rack (1-5)</option>
-    {[1, 2, 3, 4, 5].map(num => <option key={num} value={num}>{`Rack ${num}`}</option>)}
+    <option value="">Select Rack</option>
+    {[1, 2, 3, 4, 5].map(num => (
+        <option key={num} value={`Rack 0${num}`}>{`Rack 0${num}`}</option>
+    ))}
   </select>
 </div>
 
@@ -624,8 +668,10 @@ const handleReapproval = async (fileId) => {
     onChange={(e) => setShelfNumber(e.target.value)} 
     required
   >
-    <option value="">Select Shelf (1-8)</option>
-    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => <option key={num} value={num}>{`Shelf ${num}`}</option>)}
+    <option value="">Select Shelf</option>
+    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+        <option key={num} value={`Shelf 0${num}`}>{`Shelf 0${num}`}</option>
+    ))}
   </select>
 </div>
           
