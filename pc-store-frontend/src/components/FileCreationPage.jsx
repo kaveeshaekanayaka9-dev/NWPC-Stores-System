@@ -37,12 +37,23 @@ const FileCreationPage = ({ user, goToDashboard }) => {
       formData.append('submittedBy', user.email );
       formData.append('attachedFile', attachedFile); // 👈 Backend Multer එක බලාපොරොත්තු වන නම (Key)
 
-      // Axios හරහා Multipart දත්ත සර්වර් එකට යැවීම
       await axios.post('http://localhost:5000/api/files/add', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
+
+      // Add Create Audit Log
+      try {
+        await axios.post('http://localhost:5000/api/audit-logs/add', {
+          officerId: user.email,
+          action: "CREATED_FILE",
+          fileName: fileName,
+          timestamp: new Date()
+        });
+      } catch (logErr) {
+        console.error("Audit log failed", logErr);
+      }
       
       setMessage('✅ ලිපිගොනුව සහ ඇමුණුම සාර්ථකව ඇතුළත් කළා! එය Admin අනුමැතිය සඳහා යොමු කෙරුණි.');
       

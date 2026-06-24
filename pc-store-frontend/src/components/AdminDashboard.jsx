@@ -596,8 +596,16 @@ const handleReapproval = async (fileId) => {
                         }} 
                         onClick={() => {
                           setSelectedFileId(f._id);
-                          setRackNumber('');
-                          setShelfNumber('');
+                          let defaultRack = '';
+                          const cat = f.category?.toLowerCase() || '';
+                          if (cat.includes('general')) defaultRack = 'Rack 01';
+                          else if (cat.includes('finance') || cat.includes('account')) defaultRack = 'Rack 02';
+                          else if (cat.includes('legal')) defaultRack = 'Rack 03';
+                          else if (cat.includes('inventory')) defaultRack = 'Rack 04';
+                          else if (cat.includes('establishment')) defaultRack = 'Rack 05';
+                          
+                          setRackNumber(defaultRack);
+                          setShelfNumber(defaultRack ? 'Shelf 01' : '');
                         }}
                       >
                         {isSelected ? 'Selected 🎯' : 'Select 🗄️'}
@@ -653,9 +661,11 @@ const handleReapproval = async (fileId) => {
     required
   >
     <option value="">Select Rack</option>
-    {[1, 2, 3, 4, 5].map(num => (
-        <option key={num} value={`Rack 0${num}`}>{`Rack 0${num}`}</option>
-    ))}
+    <option value="Rack 01">Rack 01 - General</option>
+    <option value="Rack 02">Rack 02 - Finance/Account</option>
+    <option value="Rack 03">Rack 03 - Legal</option>
+    <option value="Rack 04">Rack 04 - Inventory</option>
+    <option value="Rack 05">Rack 05 - Establishment</option>
   </select>
 </div>
 

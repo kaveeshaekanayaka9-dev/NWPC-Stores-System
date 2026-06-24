@@ -118,6 +118,23 @@ app.get('/api/audit-logs/:email', async (req, res) => {
     }
 });
 
+app.post('/api/audit-logs/add', async (req, res) => {
+    try {
+        const { officerId, action, fileName } = req.body;
+        const newLog = new AuditLog({
+            officerId,
+            action,
+            fileName,
+            timestamp: new Date()
+        });
+        await newLog.save();
+        res.status(201).json({ message: "Audit log added successfully" });
+    } catch (err) {
+        console.error("Failed to add audit log:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {

@@ -151,7 +151,7 @@ const handleWhatsAppShare = async (file) => { // මෙතන 'async' අනි�
 };
 
 
-const handleDownload = async (elementId) => {
+const handleDownload = async (elementId, fileName) => {
   const input = document.getElementById(elementId);
   
   if (!input) {
@@ -171,7 +171,7 @@ const handleDownload = async (elementId) => {
     await axios.post('http://localhost:5000/api/audit-logs/add', {
       officerId: user.email,
       action: "DOWNLOADED_FILE",
-      fileName: file.fileName,
+      fileName: fileName || "Record Print",
       timestamp: new Date()
     });
   } catch (err) {
@@ -215,6 +215,7 @@ const handleUpdateSubmit = async () => {
     return;
   }
 
+  const formData = new FormData();
   formData.append('file', newFile); // මෙය ඔබේ backend upload.single('file') සමග ගැලපිය යුතුයි
   formData.append('isVerified', 'PENDING');
 
@@ -224,6 +225,19 @@ const handleUpdateSubmit = async () => {
     });
     
     alert("✅ ලිපිගොනුව සාර්ථකව යාවත්කාලීන කරන ලදී.");
+    
+    // Add Edit Audit Log
+    try {
+      await axios.post('http://localhost:5000/api/audit-logs/add', {
+        officerId: user.email,
+        action: "EDITED_FILE",
+        fileName: currentFile.fileName,
+        timestamp: new Date()
+      });
+    } catch (logErr) {
+      console.error("Audit log failed", logErr);
+    }
+
     setIsModalOpen(false);
     setNewFile(null);
     fetchMyFiles();
@@ -479,12 +493,20 @@ useEffect(() => {
   EDITE
 </button>
     <button style={styles.deleteBtn} onClick={handleBulkDelete}> DELETE</button>
-    <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={handleWhatsAppShare}> SHARE</button>
+    <button style={{ ...styles.viewBtn, background: '#25D366' }} onClick={() => {
+      if (selectedFiles.length > 0) {
+        const fileToShare = myFiles.find(f => f._id === selectedFiles[0]);
+        if (fileToShare) handleWhatsAppShare(fileToShare);
+      } else {
+        alert("කරුණාකර SHARE කිරීමට ෆයිල් එකක් තෝරන්න.");
+      }
+    }}> SHARE</button>
      <button 
   style={{ ...styles.viewBtn, background: '#695251', color: 'white' }} 
   onClick={() => {
     if (selectedFiles.length > 0) {
-      handleDownload(`record-${selectedFiles[0]}`);
+      const fileToDownload = myFiles.find(f => f._id === selectedFiles[0]);
+      handleDownload(`record-${selectedFiles[0]}`, fileToDownload?.fileName);
     } else {
       alert("කරුණාකර බාගත කිරීමට ෆයිල් එකක් තෝරන්න.");
     }
