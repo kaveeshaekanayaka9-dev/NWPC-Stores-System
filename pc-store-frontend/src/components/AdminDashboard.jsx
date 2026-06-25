@@ -30,7 +30,7 @@ const AdminDashboard = ({ user, goToHome , goToMainHome }) => {
   const [shelfNumber, setShelfNumber] = useState('');
   const [reapprovalLocations, setReapprovalLocations] = useState({});
   // AdminDashboard.jsx එකේ ඉහළින්ම මෙය එකතු කරන්න
-const [chartData, setChartData] = useState({ rackStats: [], statusStats: [], categoryStats: [] });
+const [chartData, setChartData] = useState({ rackStats: [], statusStats: [], yearStats: [] });
   
 
 
@@ -66,8 +66,7 @@ const [chartData, setChartData] = useState({ rackStats: [], statusStats: [], cat
   try {
     if (action === 'APPROVE') {
       // 1. Backend එකේ API එකට PUT Request එක යැවීම
-     // නිවැරදි කේතය:
-const res = await axios.put(`http://localhost:5000/api/files/approve-file/${fileId}`);
+      const res = await axios.put(`http://localhost:5000/api/admin/approve-user/${id}`);
       
       // 🎯 2. වැදගත්ම කොටස: ලිස්ට් එකෙන් අයින් නොකර, එම යූසර්ගේ 'isAdminApproved' ස්ටේට් එක පමණක් true කරයි
       setPendingUsers(prevUsers => 
@@ -100,58 +99,51 @@ const handleFileApproval = async (fileId) => {
   }
 };
 
-const handleReapprovalLocationChange = (fileId, field, value) => {
-  setReapprovalLocations(prev => ({
-    ...prev,
-    [fileId]: {
-      ...prev[fileId],
-      [field]: value
-    }
-  }));
-};
-
 const handleReapproval = async (fileId) => {
-  const location = reapprovalLocations[fileId] || {};
-  const rack = location.rackNumber?.trim();
-  const shelf = location.shelfNumber?.trim();
-
-  if (!rack || !shelf) {
-    alert("Please enter rack number and shelf number before re-approval.");
-    return;
-  }
-
+  if (!window.confirm("මෙම ලිපිගොනුව නැවත අනුමත කිරීමට ඔබට අවශ්‍යද?")) return;
+  
   try {
+    const selectedFile = allFiles.find(f => f._id === fileId);
+    if (!selectedFile || !selectedFile.year) {
+      alert("File or Year not found!");
+      return;
+    }
+
+    const fileYear = parseInt(selectedFile.year, 10);
+    const yearOffset = Math.max(0, fileYear - 2010);
+    const rackNum = `Rack 0${Math.floor(yearOffset / 8) + 1}`;
+    const shelfNum = `Shelf 0${(yearOffset % 8) + 1}`;
+
     await axios.put(`http://localhost:5000/api/files/verify-file/${fileId}`, {
-      rackNumber: rack,
-      shelfNumber: shelf
+      rackNumber: rackNum,
+      shelfNumber: shelfNum
     });
 
-    setReapprovalLocations(prev => {
-      const next = { ...prev };
-      delete next[fileId];
-      return next;
-    });
-
-    alert("File re-approved with rack and shelf location.");
+    alert(`✅ ලිපිගොනුව සාර්ථකව නැවත අනුමත කර ${rackNum}, ${shelfNum} ලෙස ස්වයංක්‍රීයව වෙන් කරන ලදී!`);
     loadAdminData();
   } catch (err) {
     alert("Re-approval failed: " + (err.response?.data?.message || err.message));
   }
 };
 
-  const handleAssignRack = async (e) => {
-    e.preventDefault();
-    if (!selectedFileId) {
-      alert("කරුණාකර ප්‍රථමයෙන් ලිපිගොනුවක් තෝරාගන්න.");
-      return;
-    }
+  const handleApproveAndAssign = async (fileId) => {
+    if (!window.confirm("මෙම ලිපිගොනුව අනුමත කර ස්වයංක්‍රීයව රාක්ක ගත කිරීමට ඔබට අවශ්‍යද?")) return;
+    
     try {
-      await axios.put(`http://localhost:5000/api/files/verify-file/${selectedFileId}`, { rackNumber, shelfNumber });
-      alert("✅ ලිපිගොනුව සාර්ථකව සත්‍යාපනය කර රාක්ක අංකය වෙන් කරන ලදී!");
+      const selectedFile = pendingFiles.find(f => f._id === fileId);
+      if (!selectedFile || !selectedFile.year) {
+        alert("File or Year not found!");
+        return;
+      }
       
-      setSelectedFileId(null);
-      setRackNumber(''); 
-      setShelfNumber('');
+      const fileYear = parseInt(selectedFile.year, 10);
+      const yearOffset = Math.max(0, fileYear - 2010);
+      const rackNum = `Rack 0${Math.floor(yearOffset / 8) + 1}`;
+      const shelfNum = `Shelf 0${(yearOffset % 8) + 1}`;
+
+      await axios.put(`http://localhost:5000/api/files/verify-file/${fileId}`, { rackNumber: rackNum, shelfNumber: shelfNum });
+      alert(`✅ ලිපිගොනුව සාර්ථකව සත්‍යාපනය කර ${rackNum}, ${shelfNum} ලෙස ස්වයංක්‍රීයව වෙන් කරන ලදී!`);
+      
       loadAdminData(); 
     } catch (err) {
       alert("❌ රාක්ක වෙන් කිරීම අසාර්ථකයි: " + (err.response?.data?.message || err.message));
@@ -378,14 +370,14 @@ const handleReapproval = async (fileId) => {
 />
 </div>
 
-{/* Doughnut Chart - Files by Category */}
+{/* Doughnut Chart - Files by Year */}
 <div style={styles.chartContainer}>
     <Doughnut
         data={{
-            labels: chartData.categoryStats.map(item => item._id || 'Uncategorized'),
+            labels: chartData.yearStats ? chartData.yearStats.map(item => item._id || 'Unknown Year') : [],
             datasets: [{
-                label: 'Files by Category',
-                data: chartData.categoryStats.map(item => item.count),
+                label: 'Files by Year',
+                data: chartData.yearStats ? chartData.yearStats.map(item => item.count) : [],
                 backgroundColor: [
                     '#06b6d4',
                     '#f97316',
@@ -404,7 +396,7 @@ const handleReapproval = async (fileId) => {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Files by Category',
+                    text: 'Files by Year',
                     font: { size: 16, weight: 'bold' }
                 },
                 legend: { position: 'bottom' }
@@ -480,7 +472,7 @@ const handleReapproval = async (fileId) => {
 </tbody>
             </table>
           </div>
-        )};
+        )}
 
         
 
@@ -587,30 +579,17 @@ const handleReapproval = async (fileId) => {
                   
                   {/* බොත්තම් */}
                   <td style={{ ...styles.proTd, textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: '12px' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px' }}>
                       <button 
-                        style={{
-                          ...styles.proSelectBtn, borderRadius: '5px',backgroundColor: '#3d33f9' , color:'#fff',
-                          background: isSelected ? '#1d52ee' : '#196cf1',
-                          boxShadow: isSelected ? '0 3px 8px rgba(16,185,129,0.25)' : '0 3px 8px rgba(59,130,246,0.15)'
-                        }} 
-                        onClick={() => {
-                          setSelectedFileId(f._id);
-                          let defaultRack = '';
-                          const cat = f.category?.toLowerCase() || '';
-                          if (cat.includes('general')) defaultRack = 'Rack 01';
-                          else if (cat.includes('finance') || cat.includes('account')) defaultRack = 'Rack 02';
-                          else if (cat.includes('legal')) defaultRack = 'Rack 03';
-                          else if (cat.includes('inventory')) defaultRack = 'Rack 04';
-                          else if (cat.includes('establishment')) defaultRack = 'Rack 05';
-                          
-                          setRackNumber(defaultRack);
-                          setShelfNumber(defaultRack ? 'Shelf 01' : '');
-                        }}
+                        style={styles.proSelectBtn} 
+                        onClick={() => handleApproveAndAssign(f._id)}
                       >
-                        {isSelected ? 'Selected 🎯' : 'Select 🗄️'}
+                        Approve & Assign 🎯
                       </button>
-                      <button style={{ ...styles.proRejectBtn, borderRadius: '5px',backgroundColor: '#f31515', color: '#fff' }} onClick={() => handleRejectFile(f._id)}>
+                      <button 
+                        style={styles.proRejectBtn} 
+                        onClick={() => handleRejectFile(f._id)}
+                      >
                         Reject ✕
                       </button>
                     </div>
@@ -623,85 +602,11 @@ const handleReapproval = async (fileId) => {
       </table>
     </div>
 
-    {/* BOTTOM SECTION: RACK ASSIGNMENT BOX (⚠️ දැන් පහළට ගෙනාවා) */}
-    <div 
-      style={{ 
-        ...styles.card, 
-        width: '100%', 
-        background: selectedFileId ? '#72ef72' : '#f8fafc', 
-        padding: '30px', 
-        border: selectedFileId ? '1px solid #10b981' : '1px solid #6ff36f', 
-        boxSizing: 'border-box',
-        transition: 'all 0.3s' 
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>🗄️ Physical Rack & Shelf Assignment</h3>
-        {!selectedFileId && <span style={{ fontSize: '12px', background: '#2e85f7', padding: '3px 10px', borderRadius: '50px', color: '#0c0c0c' }}>Waiting for selection</span>}
-      </div>
-      
-      {selectedFileId ? (
-        <form onSubmit={handleAssignRack} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Selected File Details Banner */}
-          <div style={{ fontSize: '14px', background: '#f0fdf4', padding: '15px', borderRadius: '8px', color: '#166534', fontWeight: '600', border: '1px solid #bbf7d0', display: 'flex', justifyContent: 'space-between' }}>
-            <span>🎯 දැනට තෝරාගත් ලිපිගොනුව (Active Mapping ID)</span>
-            <span style={{ fontFamily: 'monospace', color: '#15803d' }}>{selectedFileId}</span>
-          </div>
-          
-          {/* Dual Column Inputs */}
-          {/* Rack Number Dropdown */}
-{/* Rack Number Dropdown */}
-<div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-  <label style={styles.newLabel}>Rack Number (රාක්ක අංකය)</label>
-  <select 
-    style={styles.newInput} 
-    value={rackNumber} 
-    onChange={(e) => setRackNumber(e.target.value)} 
-    required
-  >
-    <option value="">Select Rack</option>
-    <option value="Rack 01">Rack 01 - General</option>
-    <option value="Rack 02">Rack 02 - Finance/Account</option>
-    <option value="Rack 03">Rack 03 - Legal</option>
-    <option value="Rack 04">Rack 04 - Inventory</option>
-    <option value="Rack 05">Rack 05 - Establishment</option>
-  </select>
-</div>
 
-{/* Shelf Number Dropdown */}
-<div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-  <label style={styles.newLabel}>Shelf Number (තට්ටු අංකය)</label>
-  <select 
-    style={styles.newInput} 
-    value={shelfNumber} 
-    onChange={(e) => setShelfNumber(e.target.value)} 
-    required
-  >
-    <option value="">Select Shelf</option>
-    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-        <option key={num} value={`Shelf 0${num}`}>{`Shelf 0${num}`}</option>
-    ))}
-  </select>
-</div>
-          
-          {/* Action Button */}
-          <button type="submit" style={{ ...styles.newSubmitBtn, alignSelf: 'flex-start', padding: '14px 35px',color :'#090909', backgroundColor: '#6773fa', borderRadius: '8px', fontWeight: 'bold' }}>
-            Verify & Confirm Location Mapping 🚀
-          </button>
-        </form>
-      ) : (
-        <div style={{ ...styles.newPlaceholder, padding: '40px 20px' }}>
-          <span style={{ fontSize: '24px', marginRight: '10px' }}> </span>
-          ඉහත වගුවෙන් ලිපිගොනුවක් තෝරාගත් පසු (Select කළ පසු) රාක්ක අංක ඇතුළත් කිරීමේ පෝරමය මෙතනින් දිස්වේවි.
-        </div>
-      )}
-    </div>
 
   </div>
 )}
 
-{/* 3. RE-APPROVAL TAB */}
 {activeTab === 'RE_APPROVAL' && (
   <div style={styles.card}>
     <h3>🔄 Need Re-approval</h3>
@@ -719,7 +624,10 @@ const handleReapproval = async (fileId) => {
       </thead>
       <tbody>
         {allFiles.filter(f => f.isVerified === 'PENDING' && f.needsReapproval === true).map(f => {
-          const location = reapprovalLocations[f._id] || {};
+          const fileYear = parseInt(f.year, 10);
+          const yearOffset = Math.max(0, fileYear - 2010);
+          const calculatedRack = `Rack 0${Math.floor(yearOffset / 8) + 1}`;
+          const calculatedShelf = `Shelf 0${(yearOffset % 8) + 1}`;
 
           return (
           <tr key={f._id} style={styles.trRow}>
@@ -727,22 +635,10 @@ const handleReapproval = async (fileId) => {
             <td>{f.fileName}</td>
             <td><span style={{ color: '#d97706', fontWeight: 'bold' }}>Pending Re-approval</span></td>
             <td>
-              <input
-                type="text"
-                style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }}
-                placeholder="Rack 03"
-                value={location.rackNumber || ''}
-                onChange={(e) => handleReapprovalLocationChange(f._id, 'rackNumber', e.target.value)}
-              />
+              <span style={{ fontWeight: '600', color: '#0f172a' }}>{calculatedRack}</span>
             </td>
             <td>
-              <input
-                type="text"
-                style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }}
-                placeholder="Shelf 02"
-                value={location.shelfNumber || ''}
-                onChange={(e) => handleReapprovalLocationChange(f._id, 'shelfNumber', e.target.value)}
-              />
+              <span style={{ fontWeight: '600', color: '#0f172a' }}>{calculatedShelf}</span>
             </td>
             <td>
               
@@ -982,27 +878,63 @@ const styles = {
   placeholderText: { textAlign: 'center', color: '#94a3b8', fontSize: '13px', padding: '40px 0' },
 
   // Styles Object එක තුළ
-proTh: { 
-  padding: '15px 25px', // උඩ/පහළ 15px, වම්/දකුණු 25px (පරතරය වැඩි කරන්න 25 වෙනුවට 30 හෝ 40 දාන්න)
-  fontWeight: '600', 
-  color: '#64748b', 
-  // ...
-},
-proTd: { 
-  padding: '20px 25px', // මෙහි අගය වැඩි කිරීමෙන් පේළි අතර සහ අකුරු අතර පරතරය තවත් වැඩි වේ.
-  verticalAlign: 'middle',
-  // ...
-},
-
-
-
-// Styles Object එක තුළ
-proWideTable: { 
-  width: '100%', 
-  borderCollapse: 'separate', 
-  borderSpacing: '0 20px', // මෙතන 20px කළොත් පේළි අතර පරතරය තවත් වැඩි වෙනවා
-  // ...
-},
+  proTh: { 
+    padding: '10px 15px', 
+    fontWeight: '600', 
+    color: '#64748b', 
+  },
+  proTd: { 
+    padding: '10px 15px', 
+    verticalAlign: 'middle',
+  },
+  proTrRow: {
+    background: '#ffffff',
+    borderBottom: '1px solid #f1f5f9',
+    transition: 'background-color 0.15s ease'
+  },
+  proSelectBtn: {
+    borderRadius: '4px',
+    color: '#fff',
+    background: '#10b981',
+    padding: '4px 8px',
+    fontSize: '11px',
+    fontWeight: '600',
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 1px 3px rgba(16,185,129,0.15)',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s ease-in-out'
+  },
+  proRejectBtn: {
+    borderRadius: '4px',
+    backgroundColor: '#f31515',
+    color: '#fff',
+    padding: '4px 8px',
+    fontSize: '11px',
+    fontWeight: '600',
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 1px 3px rgba(243,21,21,0.15)',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s ease-in-out'
+  },
+  proPdfBtn: {
+    padding: '4px 8px',
+    backgroundColor: '#3b82f6',
+    color: '#fff',
+    borderRadius: '4px',
+    textDecoration: 'none',
+    fontSize: '11px',
+    fontWeight: '600',
+    display: 'inline-block',
+    boxShadow: '0 1px 3px rgba(59,130,246,0.15)',
+    whiteSpace: 'nowrap'
+  },
+  proWideTable: { 
+    width: '100%', 
+    borderCollapse: 'separate', 
+    borderSpacing: '0 8px',
+  },
 tableCard: { 
   width: '100%',      // පවතින ඉඩ ප්‍රමාණයට පමණක් සීමා වේ
   maxWidth: '100%',   // තිරයෙන් පිටතට යාම වළක්වයි

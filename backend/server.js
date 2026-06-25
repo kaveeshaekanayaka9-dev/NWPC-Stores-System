@@ -58,29 +58,27 @@ app.get('/api/racks/:rackNumber', async (req, res) => {
         });
 
         const rackLayout = {
-            'shelf 04': Array(8).fill(null),
-            'shelf 03': Array(8).fill(null),
-            'shelf 02': Array(8).fill(null),
-            'shelf 01': Array(8).fill(null)
+            'Shelf 08': Array.from({ length: 24 }, () => []),
+            'Shelf 07': Array.from({ length: 24 }, () => []),
+            'Shelf 06': Array.from({ length: 24 }, () => []),
+            'Shelf 05': Array.from({ length: 24 }, () => []),
+            'Shelf 04': Array.from({ length: 24 }, () => []),
+            'Shelf 03': Array.from({ length: 24 }, () => []),
+            'Shelf 02': Array.from({ length: 24 }, () => []),
+            'Shelf 01': Array.from({ length: 24 }, () => [])
         };
 
         files.forEach(file => {
-            // Normalize shelfNumber
             let normalizedShelf = file.shelfNumber || '';
-            normalizedShelf = normalizedShelf.toLowerCase().trim();
-            if (normalizedShelf === '1' || normalizedShelf === 'shelf 1') normalizedShelf = 'shelf 01';
-            if (normalizedShelf === '2' || normalizedShelf === 'shelf 2') normalizedShelf = 'shelf 02';
-            if (normalizedShelf === '3' || normalizedShelf === 'shelf 3') normalizedShelf = 'shelf 03';
-            if (normalizedShelf === '4' || normalizedShelf === 'shelf 4') normalizedShelf = 'shelf 04';
             
-            if (rackLayout[normalizedShelf]) {
-                const currentShelfSlots = rackLayout[normalizedShelf];
-                const nextEmptyIndex = currentShelfSlots.indexOf(null);
-                if (nextEmptyIndex !== -1) {
-                    rackLayout[normalizedShelf][nextEmptyIndex] = file;
+            if (rackLayout[normalizedShelf] && file.adNumber) {
+                const adIndex = parseInt(file.adNumber, 10) - 1;
+                if (adIndex >= 0 && adIndex < 24) {
+                    rackLayout[normalizedShelf][adIndex].push(file);
                 }
             }
         });
+
         res.json(rackLayout);
     } catch (error) {
         console.error("Backend Error:", error);

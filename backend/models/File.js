@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const FileSchema = new mongoose.Schema({
   fileNumber: { type: String, required: true, unique: true },
   fileName: { type: String, required: true },
-  category: { type: String, required: true },
+  category: { type: String, default: 'Administrative' },
   description: { type: String },
   submittedBy: {
     type: String, // 👈 'string' වෙනුවට 'String' ලෙස නිවැරදි කළා
@@ -14,7 +14,11 @@ const FileSchema = new mongoose.Schema({
   needsReapproval: { type: Boolean, default: false },
   rackNumber: { type: String, default: 'Unassigned' },
   shelfNumber: { type: String, default: 'Unassigned' },
-  slotIndex: { type: Number, default: 0 }
+  
+  // New Storage Model Fields
+  adNumber: { type: String, required: true },
+  fileNumberInSlot: { type: String, required: true },
+  year: { type: String, required: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('File', FileSchema, 'files');

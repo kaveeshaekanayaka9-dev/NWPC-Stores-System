@@ -16,12 +16,12 @@ router.get('/chart-data', async (req, res) => {
             { $group: { _id: "$isVerified", count: { $sum: 1 } } }
         ]);
 
-        // New: Group files by category for the Doughnut chart
-        const categoryStats = await File.aggregate([
-            { $group: { _id: "$category", count: { $sum: 1 } } }
+        // New: Group files by year for the Doughnut chart (replaces category)
+        const yearStats = await File.aggregate([
+            { $group: { _id: "$year", count: { $sum: 1 } } }
         ]);
 
-        res.json({ rackStats, statusStats, categoryStats });
+        res.json({ rackStats, statusStats, yearStats });
     } catch (err) {
         console.error("DEBUG ERROR:", err); // වැදගත්ම කොටස: දෝෂය හරියටම පෙන්වයි
         res.status(500).json({ error: "Server error occurred", details: err.message });

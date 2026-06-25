@@ -11,41 +11,8 @@ const MainHome = ({ setView }) => {
 const [selectedRack, setSelectedRack] = useState('Rack 01');
 
 // රාක්ක වර්ග 3කටම දත්ත අඩංගු වන පරිදි මෙය වෙනස් කරන්න
-const [rackData, setRackData] = useState({
-  'Rack 01': {
-    'shelf 04': [1, 0, 1, 1, 0, 1, 0, 0],
-    'shelf 03': [1, 1, 0, 1, 1, 0, 1, 1],
-    'shelf 02': [0, 0, 1, 0, 1, 1, 0, 1],
-    'shelf 01': [1, 1, 1, 1, 0, 0, 1, 1]
-  },
-  'Rack 02': {
-    'shelf 04': [0, 1, 0, 0, 1, 0, 1, 0],
-    'shelf 03': [0, 0, 0, 1, 0, 1, 0, 0],
-    'shelf 02': [1, 1, 0, 1, 1, 1, 0, 1],
-    'shelf 01': [0, 0, 0, 0, 0, 0, 0, 0]
-  },
-  'Rack 03': {
-    'shelf 04': [1, 1, 1, 1, 1, 1, 1, 1],
-    'shelf 03': [0, 0, 0, 0, 0, 0, 0, 0],
-    'shelf 02': [1, 0, 1, 0, 1, 0, 1, 0],
-    'shelf 01': [0, 1, 0, 1, 0, 1, 0, 1]
-  },
-  'Rack 04': {
-    'shelf 04': [1, 1, 1, 1, 1, 1, 1, 1],
-    'shelf 03': [0, 0, 0, 0, 0, 0, 0, 0],
-    'shelf 02': [1, 0, 1, 0, 1, 0, 1, 0],
-    'shelf 01': [0, 1, 0, 1, 0, 1, 0, 1]
-  },
-   'Rack 05': {
-    'shelf 04': [1, 1, 1, 1, 1, 1, 1, 1],
-    'shelf 03': [0, 0, 0, 0, 0, 0, 0, 0],
-    'shelf 02': [1, 0, 1, 0, 1, 0, 1, 0],
-    'shelf 01': [0, 1, 0, 1, 0, 1, 0, 1]
-  }
-  
-});
-const shelves = ['shelf 04', 'shelf 03', 'shelf 02', 'shelf 01'];
-const columns = [1, 2, 3, 4, 5, 6, 7, 8];
+// ආරම්භක හිස් State එකක් පමණි
+const [rackData, setRackData] = useState({});
 
   useEffect(() => {
   const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -165,7 +132,7 @@ const columns = [1, 2, 3, 4, 5, 6, 7, 8];
         </div>
       </div>
 
-      {/* 4. 📊 LIVE GRAPHICAL FILE RACK PREVIEW SECTION (Your Feature kept untouched) */}
+      {/* 4. 📊 LIVE GRAPHICAL FILE RACK PREVIEW SECTION */}
       <div id="rack-preview" style={styles.rackSection}>
         <div style={styles.rackHeader}>
           <div style={{ textAlign: 'left' }}>
@@ -173,45 +140,108 @@ const columns = [1, 2, 3, 4, 5, 6, 7, 8];
             <p style={styles.rackSubtitle}>ගබඩාව තුළ භෞතික රාක්ක වල ලිපිගොනු පිරිලා ඇති ආකාරය (සජීවී දර්ශනය)</p>
           </div>
           <select style={styles.dropdown} value={selectedRack} onChange={(e) => setSelectedRack(e.target.value)}>
-  <option value="Rack 01">Rack 01 (General Files)</option>
-  <option value="Rack 02">Rack 02 (Account Files)</option>
-  <option value="Rack 03">Rack 03 (Legal Documents)</option>
-  <option value="Rack 04">Rack 04 (Inventory Files)</option>
-  <option value="Rack 05">Rack 05 (Establishment Documents)</option>
+  <option value="Rack 01">Rack 01 (2010 - 2017)</option>
+  <option value="Rack 02">Rack 02 (2018 - 2025)</option>
+  <option value="Rack 03">Rack 03 (2026 - 2033)</option>
+  <option value="Rack 04">Rack 04 (2034 - 2041)</option>
+  <option value="Rack 05">Rack 05 (2042 - 2049)</option>
 </select>
         </div>
 
         <div style={styles.legendContainer}>
   <div style={styles.legendItem}>
-    <div style={{ ...styles.legendBox, background: '#2ecc71' }}></div> 
-    <span>පිරිලා (File Available)</span>
+    <div style={{ ...styles.legendBox, background: '#10b981' }}></div> 
+    <span>1 File (Low)</span>
   </div>
-  
+  <div style={styles.legendItem}>
+    <div style={{ ...styles.legendBox, background: '#f59e0b' }}></div> 
+    <span>2 Files</span>
+  </div>
+  <div style={styles.legendItem}>
+    <div style={{ ...styles.legendBox, background: '#f97316' }}></div> 
+    <span>3 Files</span>
+  </div>
+  <div style={styles.legendItem}>
+    <div style={{ ...styles.legendBox, background: '#ef4444' }}></div> 
+    <span>4+ Files (Full)</span>
+  </div>
   <div style={styles.legendItem}>
     <div style={{ ...styles.legendBox, background: 'rgba(255, 255, 255, 0.1)' }}></div> 
-    <span>හිස් ඉඩක් (Empty Slot)</span>
+    <span>හිස් ඉඩක් (Empty)</span>
   </div>
 </div>
 
         <div style={styles.rackGrid}>
-         {shelves.map((shelf) => (
-  <div key={shelf} style={styles.shelfRow}>
-    <div style={styles.shelfLabel}>{shelf}</div>
-    <div style={styles.slotsContainer}>
-      {/* මෙතැනදී rackData තිබේදැයි බලන්න */}
-      {(rackData[selectedRack]?.[shelf] || Array(8).fill(null)).map((col, index) => {
-        const slotData = rackData[selectedRack]?.[shelf]?.[index];
-        const isOccupied = slotData !== null && slotData !== 0 && slotData !== undefined;
-        
-        return (
-          <div key={index} style={{ ...styles.slotBox, background: isOccupied ? '#2ecc71' : 'rgba(255, 255, 255, 0.05)' }}>
-            {isOccupied && <div style={styles.fileLine}></div>}
-          </div>
-        );
-      })}
-    </div>
-  </div>
-))}
+          {(() => {
+            const currentRackObj = rackData[selectedRack] || {};
+            const BASE_YEAR = 2010;
+            const SHELVES_PER_RACK = 8;
+            const MAX_CAPACITY = 5;
+            const rackIndex = (() => {
+              const num = parseInt(selectedRack.split(' ')[1], 10);
+              return isNaN(num) ? 0 : num - 1;
+            })();
+
+            // Generate fixed 8 shelves: Shelf 08 at top, Shelf 01 at bottom
+            const fixedShelves = Array.from({ length: SHELVES_PER_RACK }, (_, i) => {
+              const shelfIndex = SHELVES_PER_RACK - 1 - i;
+              const shelfNum = `Shelf 0${shelfIndex + 1}`;
+              const year = BASE_YEAR + (rackIndex * SHELVES_PER_RACK) + shelfIndex;
+              return { shelfNum, year };
+            });
+
+            return fixedShelves.map(({ shelfNum, year }) => {
+              const shelfData = currentRackObj[shelfNum] || Array.from({ length: 24 }, () => []);
+              const totalShelfFiles = shelfData.reduce((sum, slot) => sum + (slot ? slot.length : 0), 0);
+              return (
+                <div key={shelfNum} style={styles.shelfRow}>
+                  <div style={{ ...styles.shelfLabel, width: '100px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '800', color: '#10b981' }}>{shelfNum.toUpperCase()}</div>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', marginTop: '2px' }}>({year})</div>
+                    <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '3px' }}>📁 {totalShelfFiles}</div>
+                  </div>
+                  <div style={styles.slotsContainer}>
+                    {shelfData.map((slotFiles, index) => {
+                      const fileCount = slotFiles ? slotFiles.length : 0;
+                      const isOccupied = fileCount > 0;
+                      const fillPercent = Math.min((fileCount / MAX_CAPACITY) * 100, 100);
+
+                      // Color gradient based on fill level
+                      let slotColor = 'rgba(255, 255, 255, 0.05)';
+                      let barColor = '#10b981';
+                      if (fileCount === 1) {
+                        slotColor = 'rgba(16, 185, 129, 0.6)';
+                        barColor = '#10b981';
+                      } else if (fileCount === 2) {
+                        slotColor = 'rgba(245, 158, 11, 0.7)';
+                        barColor = '#f59e0b';
+                      } else if (fileCount === 3) {
+                        slotColor = 'rgba(249, 115, 22, 0.7)';
+                        barColor = '#f97316';
+                      } else if (fileCount >= 4) {
+                        slotColor = 'rgba(239, 68, 68, 0.8)';
+                        barColor = '#ef4444';
+                      }
+
+                      return (
+                        <div key={index} style={{ ...styles.slotBox, background: slotColor, position: 'relative', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
+                          {isOccupied && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '800', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{fileCount}</span>
+                              {/* Capacity Progress Bar */}
+                              <div style={{ width: '70%', height: '3px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ width: `${fillPercent}%`, height: '100%', background: '#fff', borderRadius: '2px', transition: 'width 0.3s ease' }}></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
         <p style={styles.infoFooter}>⚠️ සටහන: ලිපිගොනු වල නම සහ රහස්‍ය තොරතුරු බැලීම සඳහා කරුණාකර පද්ධතියට ලොග් වන්න.</p>
       </div>
@@ -363,14 +393,15 @@ const styles = {
   },
   rackGrid: {
     background: 'rgba(0,0,0,0.2)', padding: '30px', borderRadius: '20px',
-    border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '20px'
+    border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '20px',
+    overflowX: 'auto', minWidth: '100%'
   },
-  shelfRow: { display: 'flex', alignItems: 'center', gap: '20px', padding: '10px' },
-  shelfLabel: { width: '80px', fontSize: '12px', fontWeight: 'bold', color: '#10b981', letterSpacing: '1px' },
-  slotsContainer: { flex: 1, display: 'flex', gap: '10px' },
+  shelfRow: { display: 'flex', alignItems: 'center', gap: '20px', padding: '10px', minWidth: '1000px' },
+  shelfLabel: { width: '80px', fontSize: '12px', fontWeight: 'bold', color: '#10b981', letterSpacing: '1px', flexShrink: 0 },
+  slotsContainer: { flex: 1, display: 'flex', gap: '8px' },
   slotBox: {
-    flex: 1, height: '70px', borderRadius: '10px', transition: '0.3s',
-    display: 'flex', justifyContent: 'center', alignItems: 'center'
+    flex: 1, height: '70px', borderRadius: '6px', transition: '0.3s',
+    display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: '35px'
   },
   infoFooter: { fontSize: '12px', color: '#f59e0b', textAlign: 'center', marginTop: '30px' },
   aboutSection: { width: '100%', background: 'rgba(255,255,255,0.02)', padding: '80px 0', textAlign: 'center' },

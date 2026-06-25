@@ -3,9 +3,10 @@ import axios from 'axios';
 
 
 const FileCreationPage = ({ user, goToDashboard }) => {
-  const [fileNumber, setFileNumber] = useState('');
+  const [adNumber, setAdNumber] = useState('01');
+  const [fileNumberInSlot, setFileNumberInSlot] = useState('');
+  const [year, setYear] = useState(new Date().getFullYear().toString());
   const [fileName, setFileName] = useState('');
-  const [category, setCategory] = useState('General');
   const [description, setDescription] = useState('');
   const [attachedFile, setAttachedFile] = useState(null); // 👈 1. ෆයිල් එක තබා ගැනීමට State එකක්
   const [message, setMessage] = useState('');
@@ -22,18 +23,18 @@ const FileCreationPage = ({ user, goToDashboard }) => {
 
     setLoading(true);
     try {
-      // ⚠️ 2. ෆයිල් අප්ලෝඩ් කිරීමේදී JSON වෙනුවට අනිවාර්යයෙන්ම FormData පාවිච්චි කළ යුතුයි
       console.log("🔥 User Object එකේ තියෙන දත්ත:", JSON.stringify(user, null, 2));
-    console.log("📧 සර්වර් එකට යන ඊමේල් එක:", user?.email);
+      console.log("📧 සර්වර් එකට යන ඊමේල් එක:", user?.email);
 
-
+      const generatedFileNumber = `NWP/CS/AD/${adNumber}/${fileNumberInSlot}/${year}`;
       
       const formData = new FormData();
-      formData.append('fileNumber', fileNumber);
+      formData.append('fileNumber', generatedFileNumber);
       formData.append('fileName', fileName);
-      formData.append('category', category);
+      formData.append('adNumber', adNumber);
+      formData.append('fileNumberInSlot', fileNumberInSlot);
+      formData.append('year', year);
       formData.append('description', description);
-      // user?.email වෙනුවට user?.id ලෙස මාරු කරන්න
       formData.append('submittedBy', user.email );
       formData.append('attachedFile', attachedFile); // 👈 Backend Multer එක බලාපොරොත්තු වන නම (Key)
 
@@ -55,10 +56,10 @@ const FileCreationPage = ({ user, goToDashboard }) => {
         console.error("Audit log failed", logErr);
       }
       
-      setMessage('✅ ලිපිගොනුව සහ ඇමුණුම සාර්ථකව ඇතුළත් කළා! එය Admin අනුමැතිය සඳහා යොමු කෙරුණි.');
+      setMessage(`✅ ලිපිගොනුව (${generatedFileNumber}) සාර්ථකව ඇතුළත් කළා! එය Admin අනුමැතිය සඳහා යොමු කෙරුණි.`);
       
       // Form එක රීසෙට් කිරීම
-      setFileNumber(''); 
+      setFileNumberInSlot(''); 
       setFileName(''); 
       setDescription(''); 
       setAttachedFile(null);
@@ -84,19 +85,28 @@ const FileCreationPage = ({ user, goToDashboard }) => {
         {message && <div style={styles.alertBox}>{message}</div>}
 
         <form onSubmit={handleSubmitFile} style={styles.form}>
-          <label style={styles.label}>File Number (ලිපිගොනු අංකය)</label>
-          <input type="text" style={styles.input} value={fileNumber} onChange={(e) => setFileNumber(e.target.value)} placeholder="e.g., NWPC/GEN/2026/102" required />
+          
+          <label style={styles.label}>AD Number (Slot)</label>
+          <select style={styles.select} value={adNumber} onChange={(e) => setAdNumber(e.target.value)}>
+            {Array.from({ length: 24 }, (_, i) => {
+              const num = (i + 1).toString().padStart(2, '0');
+              return <option key={num} value={num}>AD/{num}</option>;
+            })}
+          </select>
+
+          <label style={styles.label}>File Number In Slot (උදා: 102)</label>
+          <input type="text" style={styles.input} value={fileNumberInSlot} onChange={(e) => setFileNumberInSlot(e.target.value)} placeholder="e.g., 102" required />
+
+          <label style={styles.label}>Year (වර්ෂය)</label>
+          <input type="text" style={styles.input} value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g., 2026" required />
+
+          <label style={styles.label}>Generated File Identity</label>
+          <div style={styles.generatedIdBox}>
+            NWP/CS/AD/{adNumber}/{fileNumberInSlot || '___'}/{year || '____'}
+          </div>
 
           <label style={styles.label}>File Name (ලිපිගොනුවේ නම)</label>
           <input type="text" style={styles.input} value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="e.g., වාර්ෂික ප්‍රාග්ධන වියදම් වාර්තාව" required />
-
-          <label style={styles.label}>Category (ප්‍රවර්ගය)</label>
-          <select style={styles.select} value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="General">General (පොදු)</option>
-            <option value="Finance">Finance (මුදල්)</option>
-            <option value="Inventory">Inventory (ගබඩා ලේඛන)</option>
-            <option value="Legal">Legal (නීතිමය)</option>
-          </select>
 
           {/* 📥 3. මෙන්න අලුතින් එකතු කළ CHOOSE FILE INPUT එක */}
           <label style={styles.label}>Upload Document (ලේඛනය අප්ලෝඩ් කරන්න - PDF / Images)</label>
@@ -134,7 +144,8 @@ const styles = {
   fileInput: { padding: '12px', borderRadius: '8px', border: '2px dashed #cbd5e1', background: '#f8fafc', cursor: 'pointer', fontSize: '14px' }, // 👈 File Input Style එක
   textarea: { padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', resize: 'none', outline: 'none' },
   submitBtn: { background: '#10b981', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', marginTop: '10px', transition: '0.2s' },
-  alertBox: { padding: '15px', background: '#e6f4ea', color: '#137333', borderRadius: '8px', fontSize: '14px', fontWeight: '500', marginBottom: '20px' }
+  alertBox: { padding: '15px', background: '#e6f4ea', color: '#137333', borderRadius: '8px', fontSize: '14px', fontWeight: '500', marginBottom: '20px' },
+  generatedIdBox: { padding: '12px', background: '#f0fdf4', border: '1px dashed #22c55e', borderRadius: '8px', color: '#166534', fontWeight: 'bold', fontSize: '15px', textAlign: 'center', letterSpacing: '1px' }
 };
 
 export default FileCreationPage;

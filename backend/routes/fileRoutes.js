@@ -30,12 +30,12 @@ const upload = multer({ storage: storage });
 // ==========================================
 router.post('/add', upload.single('attachedFile'), async (req, res) => {
   try {
-    const { fileNumber, fileName, category, description, rackNumber, shelfNumber, submittedBy } = req.body;
+    const { fileNumber, fileName, description, submittedBy, adNumber, fileNumberInSlot, year } = req.body;
     
     // 1. Validation
     if (!submittedBy) return res.status(400).json({ message: "SubmittedBy ID is required" });
-    if (rackNumber > 5 || shelfNumber > 8) {
-      return res.status(400).json({ error: "Invalid location! Rack 1-5 & Shelf 1-8 allowed." });
+    if (!adNumber || !fileNumberInSlot || !year) {
+      return res.status(400).json({ message: "Missing required AD Number, File Number, or Year." });
     }
 
     // 2. File URL එක සැකසීම
@@ -43,8 +43,8 @@ router.post('/add', upload.single('attachedFile'), async (req, res) => {
 
     // 3. File එක Save කිරීම
     const newFile = await File.create({
-      fileNumber, fileName, category, description, rackNumber, shelfNumber, 
-      submittedBy, fileUrl, isVerified: 'PENDING'
+      fileNumber, fileName, description, submittedBy, fileUrl, isVerified: 'PENDING',
+      adNumber, fileNumberInSlot, year
     });
 
     // 4. Audit Log එක (මෙය අනිවාර්යයි)
